@@ -14,7 +14,178 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      materials: {
+        Row: {
+          category: Database["public"]["Enums"]["material_category"]
+          content: Json | null
+          created_at: string
+          id: string
+          is_favorite: boolean
+          level: Database["public"]["Enums"]["jlpt_level"]
+          tags: string[] | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category: Database["public"]["Enums"]["material_category"]
+          content?: Json | null
+          created_at?: string
+          id?: string
+          is_favorite?: boolean
+          level?: Database["public"]["Enums"]["jlpt_level"]
+          tags?: string[] | null
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          category?: Database["public"]["Enums"]["material_category"]
+          content?: Json | null
+          created_at?: string
+          id?: string
+          is_favorite?: boolean
+          level?: Database["public"]["Enums"]["jlpt_level"]
+          tags?: string[] | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "materials_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          current_path: Database["public"]["Enums"]["learning_path"]
+          daily_goal_xp: number
+          display_name: string | null
+          id: string
+          theme_preference: string
+        }
+        Insert: {
+          created_at?: string
+          current_path?: Database["public"]["Enums"]["learning_path"]
+          daily_goal_xp?: number
+          display_name?: string | null
+          id: string
+          theme_preference?: string
+        }
+        Update: {
+          created_at?: string
+          current_path?: Database["public"]["Enums"]["learning_path"]
+          daily_goal_xp?: number
+          display_name?: string | null
+          id?: string
+          theme_preference?: string
+        }
+        Relationships: []
+      }
+      srs_logs: {
+        Row: {
+          ease_factor: number
+          id: string
+          interval_days: number
+          last_reviewed_at: string | null
+          next_review_date: string
+          repetitions: number
+          status: Database["public"]["Enums"]["srs_status"]
+          user_id: string
+          vocab_id: string
+        }
+        Insert: {
+          ease_factor?: number
+          id?: string
+          interval_days?: number
+          last_reviewed_at?: string | null
+          next_review_date?: string
+          repetitions?: number
+          status?: Database["public"]["Enums"]["srs_status"]
+          user_id: string
+          vocab_id: string
+        }
+        Update: {
+          ease_factor?: number
+          id?: string
+          interval_days?: number
+          last_reviewed_at?: string | null
+          next_review_date?: string
+          repetitions?: number
+          status?: Database["public"]["Enums"]["srs_status"]
+          user_id?: string
+          vocab_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "srs_logs_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "srs_logs_vocab_id_fkey"
+            columns: ["vocab_id"]
+            isOneToOne: false
+            referencedRelation: "vocab_bank"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vocab_bank: {
+        Row: {
+          audio_url: string | null
+          created_at: string
+          example_sentence: string | null
+          id: string
+          jlpt_level: Database["public"]["Enums"]["jlpt_level"] | null
+          kana: string
+          kanji: string | null
+          meaning: string
+          tags: string[] | null
+          user_id: string
+        }
+        Insert: {
+          audio_url?: string | null
+          created_at?: string
+          example_sentence?: string | null
+          id?: string
+          jlpt_level?: Database["public"]["Enums"]["jlpt_level"] | null
+          kana: string
+          kanji?: string | null
+          meaning: string
+          tags?: string[] | null
+          user_id: string
+        }
+        Update: {
+          audio_url?: string | null
+          created_at?: string
+          example_sentence?: string | null
+          id?: string
+          jlpt_level?: Database["public"]["Enums"]["jlpt_level"] | null
+          kana?: string
+          kanji?: string | null
+          meaning?: string
+          tags?: string[] | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vocab_bank_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +194,10 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      jlpt_level: "n5" | "n4" | "n3" | "n2" | "n1" | "none"
+      learning_path: "jlpt_academic" | "jft_practical"
+      material_category: "grammar" | "reading" | "conversation" | "vocabulary"
+      srs_status: "new" | "learning" | "review" | "mastered"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +324,11 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      jlpt_level: ["n5", "n4", "n3", "n2", "n1", "none"],
+      learning_path: ["jlpt_academic", "jft_practical"],
+      material_category: ["grammar", "reading", "conversation", "vocabulary"],
+      srs_status: ["new", "learning", "review", "mastered"],
+    },
   },
 } as const
