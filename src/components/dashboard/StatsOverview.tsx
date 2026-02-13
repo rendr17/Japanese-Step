@@ -1,18 +1,22 @@
-import { motion, useMotionValue, useTransform, animate } from "framer-motion";
+import { motion, animate } from "framer-motion";
 import { BookOpen, Award, Clock } from "lucide-react";
 import { useVocabStats } from "@/hooks/useDashboardData";
 import { useEffect, useRef } from "react";
 
 const AnimatedCounter = ({ value, suffix = "" }: { value: number; suffix?: string }) => {
   const ref = useRef<HTMLSpanElement>(null);
+  const prevValue = useRef(0);
 
   useEffect(() => {
-    const mv = useMotionValue(0);
-    const unsubscribe = mv.on("change", (v) => {
-      if (ref.current) ref.current.textContent = Math.round(v) + suffix;
+    const controls = animate(prevValue.current, value, {
+      duration: 1.2,
+      ease: "easeOut",
+      onUpdate: (v) => {
+        if (ref.current) ref.current.textContent = Math.round(v) + suffix;
+      },
     });
-    animate(mv, value, { duration: 1.2, ease: "easeOut" });
-    return () => { unsubscribe(); mv.stop(); };
+    prevValue.current = value;
+    return () => controls.stop();
   }, [value, suffix]);
 
   return <span ref={ref} className="text-3xl font-serif font-bold text-foreground">0{suffix}</span>;
