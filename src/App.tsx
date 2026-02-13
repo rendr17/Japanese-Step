@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import AppLayout from "./components/layout/AppLayout";
 import Index from "./pages/Index";
+import Materials from "./pages/Materials";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Onboarding from "./pages/Onboarding";
@@ -27,6 +28,7 @@ const App = () => (
           {/* App routes (with layout) */}
           <Route element={<AppLayout />}>
             <Route path="/" element={<Index />} />
+            <Route path="/materials" element={<Materials />} />
           </Route>
 
           <Route path="*" element={<NotFound />} />
