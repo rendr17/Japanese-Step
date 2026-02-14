@@ -38,7 +38,7 @@ const MaterialCard = ({ material, index }: { material: MaterialRow; index: numbe
       exit={{ opacity: 0, scale: 0.95 }}
       transition={{ duration: 0.3, delay: index * 0.04 }}
       className="zen-card hover-lift group cursor-pointer break-inside-avoid mb-4"
-      onClick={() => navigate(`/materials/${material.id}/edit`)}
+      onClick={() => navigate(`/materials/${material.id}`)}
     >
       {/* Top row */}
       <div className="flex items-start justify-between mb-3">
