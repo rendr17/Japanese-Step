@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Plus, Search, X, Star, MoreVertical, Copy, Trash2, Pencil, BookOpen, MessageCircle, FileText, Languages, SlidersHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -18,6 +19,7 @@ const categoryConfig: Record<string, { icon: React.ReactNode; label: string; col
 };
 
 const MaterialCard = ({ material, index }: { material: MaterialRow; index: number }) => {
+  const navigate = useNavigate();
   const toggleFav = useToggleFavorite();
   const deleteMat = useDeleteMaterial();
   const duplicateMat = useDuplicateMaterial();
@@ -36,6 +38,7 @@ const MaterialCard = ({ material, index }: { material: MaterialRow; index: numbe
       exit={{ opacity: 0, scale: 0.95 }}
       transition={{ duration: 0.3, delay: index * 0.04 }}
       className="zen-card hover-lift group cursor-pointer break-inside-avoid mb-4"
+      onClick={() => navigate(`/materials/${material.id}/edit`)}
     >
       {/* Top row */}
       <div className="flex items-start justify-between mb-3">
@@ -69,7 +72,7 @@ const MaterialCard = ({ material, index }: { material: MaterialRow; index: numbe
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem className="gap-2">
+              <DropdownMenuItem className="gap-2" onClick={(e) => { e.stopPropagation(); navigate(`/materials/${material.id}/edit`); }}>
                 <Pencil size={14} /> Edit
               </DropdownMenuItem>
               <DropdownMenuItem
@@ -161,6 +164,7 @@ const EmptyState = () => (
 );
 
 const Materials = () => {
+  const navigate = useNavigate();
   const [category, setCategory] = useState<MaterialCategory | "all">("all");
   const [level, setLevel] = useState<"all" | "n5" | "n4" | "n3" | "n2" | "n1" | "none">("all");
   const [sort, setSort] = useState<"newest" | "oldest" | "az" | "favorites">("newest");
@@ -217,7 +221,7 @@ const Materials = () => {
       >
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
           <h1 className="text-2xl font-serif font-bold text-foreground">Materi Belajar Saya</h1>
-          <Button className="gap-2 shrink-0">
+          <Button className="gap-2 shrink-0" onClick={() => navigate("/materials/new/edit")}>
             <Plus size={16} />
             Tambah Materi
           </Button>

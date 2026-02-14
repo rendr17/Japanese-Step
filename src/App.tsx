@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import AppLayout from "./components/layout/AppLayout";
 import Index from "./pages/Index";
 import Materials from "./pages/Materials";
+import MaterialEditor from "./pages/MaterialEditor";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Onboarding from "./pages/Onboarding";
@@ -29,6 +30,7 @@ const App = () => (
           <Route element={<AppLayout />}>
             <Route path="/" element={<Index />} />
             <Route path="/materials" element={<Materials />} />
+            <Route path="/materials/:id/edit" element={<MaterialEditor />} />
           </Route>
 
           <Route path="*" element={<NotFound />} />
