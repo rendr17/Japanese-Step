@@ -11,6 +11,7 @@ import MaterialDetail from "./pages/MaterialDetail";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Onboarding from "./pages/Onboarding";
+import Vocabulary from "./pages/Vocabulary";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -33,6 +34,7 @@ const App = () => (
             <Route path="/materials" element={<Materials />} />
             <Route path="/materials/:id" element={<MaterialDetail />} />
             <Route path="/materials/:id/edit" element={<MaterialEditor />} />
+            <Route path="/vocabulary" element={<Vocabulary />} />
           </Route>
 
           <Route path="*" element={<NotFound />} />
