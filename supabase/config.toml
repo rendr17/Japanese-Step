@@ -1,1 +1,4 @@
 project_id = "iqwmffxyagugixhuddcp"
+
+[functions.vocab-ai-fill]
+verify_jwt = false

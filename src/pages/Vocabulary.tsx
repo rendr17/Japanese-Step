@@ -1,168 +1,25 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Plus, Search, Trash2, Pencil, Layers, Volume2, Download, Upload,
-  ChevronDown, ArrowUpDown, X, BookMarked,
+  Plus, Search, Trash2, Pencil, Layers, Volume2, Download,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
-} from "@/components/ui/dialog";
-import {
   Table, TableHeader, TableHead, TableBody, TableRow, TableCell,
 } from "@/components/ui/table";
-import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Label } from "@/components/ui/label";
 import { useIsMobile } from "@/hooks/use-mobile";
 import {
-  useVocabularySimple, useAddVocab, useUpdateVocab, useDeleteVocab,
-  useBulkDeleteVocab, useAddToSrs, type VocabRow,
+  useVocabularySimple, useDeleteVocab, useBulkDeleteVocab, useAddToSrs, type VocabRow,
 } from "@/hooks/useVocabulary";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-
-// ── Vocab Form Dialog ──────────────────────────────────────────────
-interface VocabFormData {
-  kanji: string;
-  kana: string;
-  meaning: string;
-  example_sentence: string;
-  jlpt_level: string;
-  tags: string;
-}
-
-const emptyForm: VocabFormData = {
-  kanji: "", kana: "", meaning: "", example_sentence: "", jlpt_level: "n5", tags: "",
-};
-
-const VocabFormDialog = ({
-  open, onOpenChange, editVocab,
-}: {
-  open: boolean;
-  onOpenChange: (o: boolean) => void;
-  editVocab?: VocabRow | null;
-}) => {
-  const addMut = useAddVocab();
-  const updateMut = useUpdateVocab();
-  const [form, setForm] = useState<VocabFormData>(emptyForm);
-
-  useEffect(() => {
-    if (editVocab) {
-      setForm({
-        kanji: editVocab.kanji ?? "",
-        kana: editVocab.kana,
-        meaning: editVocab.meaning,
-        example_sentence: editVocab.example_sentence ?? "",
-        jlpt_level: editVocab.jlpt_level ?? "n5",
-        tags: (editVocab.tags ?? []).join(", "),
-      });
-    } else {
-      setForm(emptyForm);
-    }
-  }, [editVocab, open]);
-
-  const handleSubmit = () => {
-    if (!form.kana.trim() || !form.meaning.trim()) {
-      toast.error("Kana dan Meaning wajib diisi");
-      return;
-    }
-    const tags = form.tags ? form.tags.split(",").map((t) => t.trim()).filter(Boolean) : [];
-    const payload = {
-      kanji: form.kanji || null,
-      kana: form.kana,
-      meaning: form.meaning,
-      example_sentence: form.example_sentence || null,
-      jlpt_level: form.jlpt_level as any,
-      tags: tags.length > 0 ? tags : null,
-    };
-
-    if (editVocab) {
-      updateMut.mutate({ id: editVocab.id, ...payload }, {
-        onSuccess: () => { toast.success("Kosakata diperbarui"); onOpenChange(false); },
-      });
-    } else {
-      addMut.mutate(payload, {
-        onSuccess: () => { toast.success("Kosakata ditambahkan"); onOpenChange(false); },
-      });
-    }
-  };
-
-  const set = (k: keyof VocabFormData, v: string) => setForm((p) => ({ ...p, [k]: v }));
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle className="font-serif">
-            {editVocab ? "Edit Kosakata" : "Tambah Kosakata"}
-          </DialogTitle>
-          <DialogDescription>
-            {editVocab ? "Perbarui detail kosakata" : "Tambahkan kosakata baru ke bank kamu"}
-          </DialogDescription>
-        </DialogHeader>
-        <div className="space-y-3 py-2">
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <Label className="text-xs text-muted-foreground">Kanji</Label>
-              <Input value={form.kanji} onChange={(e) => set("kanji", e.target.value)} placeholder="漢字" className="font-jp text-lg h-11" />
-            </div>
-            <div>
-              <Label className="text-xs text-muted-foreground">Kana *</Label>
-              <Input value={form.kana} onChange={(e) => set("kana", e.target.value)} placeholder="かんじ" className="font-jp text-lg h-11" />
-            </div>
-          </div>
-          <div>
-            <Label className="text-xs text-muted-foreground">Meaning *</Label>
-            <Input value={form.meaning} onChange={(e) => set("meaning", e.target.value)} placeholder="Chinese characters" />
-          </div>
-          <div>
-            <Label className="text-xs text-muted-foreground">Contoh Kalimat</Label>
-            <Input value={form.example_sentence} onChange={(e) => set("example_sentence", e.target.value)} placeholder="漢字を書く" className="font-jp" />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <Label className="text-xs text-muted-foreground">JLPT Level</Label>
-              <Select value={form.jlpt_level} onValueChange={(v) => set("jlpt_level", v)}>
-                <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {["n5", "n4", "n3", "n2", "n1"].map((l) => (
-                    <SelectItem key={l} value={l}>{l.toUpperCase()}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label className="text-xs text-muted-foreground">Tags (koma)</Label>
-              <Input value={form.tags} onChange={(e) => set("tags", e.target.value)} placeholder="kata kerja, bab1" className="text-xs" />
-            </div>
-          </div>
-        </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Batal</Button>
-          <Button onClick={handleSubmit} disabled={addMut.isPending || updateMut.isPending}>
-            {editVocab ? "Simpan" : "Tambah"}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-};
-
-// ── Status badge ───────────────────────────────────────────────────
-const statusColors: Record<string, string> = {
-  new: "bg-muted text-muted-foreground",
-  learning: "bg-primary/15 text-primary",
-  review: "bg-accent/15 text-accent",
-  mastered: "bg-secondary/15 text-secondary",
-};
+import QuickAddVocab from "@/components/vocabulary/QuickAddVocab";
 
 // ── Main Page ──────────────────────────────────────────────────────
 const Vocabulary = () => {
@@ -174,12 +31,40 @@ const Vocabulary = () => {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editItem, setEditItem] = useState<VocabRow | null>(null);
+  const [existingTags, setExistingTags] = useState<string[]>([]);
   const loadMoreRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const t = setTimeout(() => setDebouncedSearch(search), 300);
     return () => clearTimeout(t);
   }, [search]);
+
+  // Ctrl+K shortcut
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault();
+        setEditItem(null);
+        setDialogOpen(true);
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
+
+  // Fetch existing tags for autocomplete
+  useEffect(() => {
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data } = await supabase.from("vocab_bank").select("tags").eq("user_id", user.id);
+      if (data) {
+        const allTags = new Set<string>();
+        data.forEach((r) => (r.tags ?? []).forEach((t: string) => allTags.add(t)));
+        setExistingTags([...allTags]);
+      }
+    })();
+  }, [dialogOpen]);
 
   const filters = { level, status: "all", search: debouncedSearch, sort };
   const { data, isLoading, hasNextPage, fetchNextPage, isFetchingNextPage } = useVocabularySimple(filters);
@@ -283,6 +168,7 @@ const Vocabulary = () => {
               <SelectItem value="most_reviewed">Most Reviewed</SelectItem>
             </SelectContent>
           </Select>
+          <span className="text-[10px] text-muted-foreground hidden sm:inline">Ctrl+K untuk tambah cepat</span>
         </div>
 
         {/* Bulk actions */}
@@ -343,7 +229,7 @@ const Vocabulary = () => {
         </button>
       )}
 
-      <VocabFormDialog open={dialogOpen} onOpenChange={setDialogOpen} editVocab={editItem} />
+      <QuickAddVocab open={dialogOpen} onOpenChange={setDialogOpen} editVocab={editItem} existingTags={existingTags} />
     </>
   );
 };
