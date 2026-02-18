@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/table";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { supabase } from "@/integrations/supabase/client";
-import { useAddVocab } from "@/hooks/useVocabulary";
+
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -151,7 +151,7 @@ function htmlToTiptapJson(html: string): any {
 const MaterialGenerator = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const addVocab = useAddVocab();
+  
 
   const [topic, setTopic] = useState("");
   const [level, setLevel] = useState("n5");
@@ -207,7 +207,6 @@ const MaterialGenerator = () => {
       grammar: "grammar",
     };
 
-    // Convert HTML string to Tiptap-compatible JSON using a temporary DOM parser
     const htmlToSave = isEditing ? editingHtml : result.content_html;
     const content = htmlToTiptapJson(htmlToSave);
 
@@ -220,20 +219,44 @@ const MaterialGenerator = () => {
       tags: ["ai-generated", type],
     });
 
-    if (err) toast.error("Gagal menyimpan");
-    else {
-      toast.success("Disimpan ke Materi");
-      navigate("/materials");
+    if (err) { toast.error("Gagal menyimpan"); return; }
+
+    // Auto-save vocabulary to vocab_bank with duplicate check
+    let newCount = 0;
+    let dupCount = 0;
+
+    if (result.vocabulary.length > 0) {
+      for (const v of result.vocabulary) {
+        const { data: existing } = await supabase
+          .from("vocab_bank")
+          .select("id")
+          .eq("kana", v.kana)
+          .eq("user_id", user.id)
+          .limit(1);
+
+        if (existing && existing.length > 0) {
+          dupCount++;
+        } else {
+          const { error: vocabErr } = await supabase.from("vocab_bank").insert({
+            kanji: v.kanji || null,
+            kana: v.kana,
+            meaning: v.meaning,
+            jlpt_level: level as any,
+            user_id: user.id,
+            tags: ["ai-generated"],
+          });
+          if (!vocabErr) newCount++;
+        }
+      }
     }
+
+    const vocabMsg = newCount > 0 || dupCount > 0
+      ? ` · ${newCount} kata baru ditambahkan${dupCount > 0 ? ` (${dupCount} sudah ada)` : ""}`
+      : "";
+    toast.success(`Disimpan ke Materi${vocabMsg}`);
+    navigate("/materials");
   };
 
-  const handleAddAllVocab = async () => {
-    if (!result) return;
-    for (const v of result.vocabulary) {
-      addVocab.mutate({ kanji: v.kanji, kana: v.kana, meaning: v.meaning, tags: ["ai-generated"] });
-    }
-    toast.success(`${result.vocabulary.length} kata ditambahkan ke kosakata`);
-  };
 
   const handleLoadHistory = (item: HistoryItem) => {
     setTopic(item.topic);
@@ -420,9 +443,7 @@ const MaterialGenerator = () => {
               <div className="zen-card p-0 overflow-hidden">
                 <div className="px-5 py-3 border-b border-border flex items-center justify-between">
                   <h3 className="text-sm font-medium text-foreground">📚 Kosakata ({result.vocabulary.length})</h3>
-                  <Button variant="ghost" size="sm" className="h-7 text-xs gap-1" onClick={handleAddAllVocab}>
-                    <Plus size={12} /> Tambah Semua ke Vocab
-                  </Button>
+                  <Badge variant="secondary" className="text-[10px]">Auto-simpan saat simpan materi</Badge>
                 </div>
                 <Table>
                   <TableHeader>
