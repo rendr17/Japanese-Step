@@ -22,43 +22,52 @@ serve(async (req) => {
 
     const charTarget = length === "short" ? 3000 : length === "long" ? 8000 : 5000;
 
+    const lengthInstruction = `CRITICAL LENGTH REQUIREMENT: The content_html MUST contain approximately ${charTarget} Japanese characters (not counting HTML tags). This is a HARD requirement. If the target is ${charTarget} characters, write at least ${Math.round(charTarget * 0.8)} characters. Count only the visible Japanese text, not HTML markup. Write MORE paragraphs and MORE detail to reach this length. Do NOT stop early.`;
+
     const typePrompts: Record<string, string> = {
       dialogue: `Generate a natural Japanese conversation about "${topic}" for JLPT ${level.toUpperCase()} learners.
+
+${lengthInstruction}
 
 Requirements:
 - Use vocabulary appropriate for ${level.toUpperCase()}
 - Include furigana for ALL kanji using format: 漢字（かんじ）
-- 6-8 dialogue turns between 2 characters
+- At least ${charTarget > 5000 ? "16-20" : charTarget > 3000 ? "10-14" : "6-8"} dialogue turns between 2-3 characters
 - Each line should have the speaker name
-- Target approximately ${charTarget} Japanese characters total
+- Include multiple scenes or topic shifts within the conversation
 - End with a cultural tip related to the topic
 
 Return using the provided tool.`,
 
       reading: `Generate a Japanese reading passage about "${topic}" for JLPT ${level.toUpperCase()} learners.
 
+${lengthInstruction}
+
 Requirements:
 - Use vocabulary and grammar appropriate for ${level.toUpperCase()}
 - Include furigana for ALL kanji using format: 漢字（かんじ）
-- Write in paragraph form, ${charTarget} characters approximately
+- Write in paragraph form with at least ${charTarget > 5000 ? "10-12" : charTarget > 3000 ? "7-9" : "4-6"} substantial paragraphs
+- Each paragraph should be at least 200 characters
 - Include a mix of simple and moderately complex sentences
+- Cover multiple aspects and subtopics of the main topic
 - Topic should be engaging and culturally relevant
 
 Return using the provided tool.`,
 
       grammar: `Create a Japanese grammar lesson about "${topic}" for JLPT ${level.toUpperCase()} learners.
 
+${lengthInstruction}
+
 Requirements:
 - Explain the grammar point clearly in Indonesian
 - Include furigana for ALL kanji using format: 漢字（かんじ）
-- Provide 4-6 example sentences with translations
+- Provide ${charTarget > 5000 ? "10-15" : charTarget > 3000 ? "8-10" : "4-6"} example sentences with translations
 - Show common mistakes to avoid
-- Target approximately ${charTarget} characters for examples
+- Include multiple usage patterns and variations
 - Include practice exercises at the end
 
 Return using the provided tool.`,
     };
-
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -145,8 +154,16 @@ Return using the provided tool.`,
     }
 
     const data = await response.json();
+    const finishReason = data.choices?.[0]?.finish_reason;
+    console.log("finish_reason:", finishReason);
+
     const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
-    if (!toolCall) throw new Error("No tool call in response");
+    if (!toolCall) {
+      // Fallback: try to parse content directly if model responded in text
+      const textContent = data.choices?.[0]?.message?.content;
+      console.error("No tool call. finish_reason:", finishReason, "content preview:", textContent?.slice(0, 200));
+      throw new Error("No tool call in response (finish_reason: " + finishReason + ")");
+    }
 
     const result = JSON.parse(toolCall.function.arguments);
     return new Response(JSON.stringify(result), {
