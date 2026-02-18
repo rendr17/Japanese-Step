@@ -14,6 +14,7 @@ import Onboarding from "./pages/Onboarding";
 import Vocabulary from "./pages/Vocabulary";
 import SentenceAnalyzer from "./pages/SentenceAnalyzer";
 import AiAssistant from "./pages/AiAssistant";
+import MaterialGenerator from "./pages/MaterialGenerator";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -39,6 +40,7 @@ const App = () => (
             <Route path="/vocabulary" element={<Vocabulary />} />
             <Route path="/ai-tools/analyzer" element={<SentenceAnalyzer />} />
             <Route path="/ai-assistant" element={<AiAssistant />} />
+            <Route path="/ai-tools/generate" element={<MaterialGenerator />} />
           </Route>
 
           <Route path="*" element={<NotFound />} />
