@@ -31,6 +31,7 @@ interface GeneratedMaterial {
   vocabulary: { kanji: string; kana: string; meaning: string }[];
   grammar_notes: { pattern: string; explanation: string }[];
   cultural_note: string;
+  indonesian_translation: string;
 }
 
 interface HistoryItem {
@@ -220,6 +221,7 @@ const MaterialGenerator = () => {
       vocabulary: result.vocabulary.length > 0 ? result.vocabulary : null,
       grammar_notes: result.grammar_notes.length > 0 ? result.grammar_notes : null,
       cultural_note: result.cultural_note || null,
+      indonesian_translation: result.indonesian_translation || null,
     } as any);
 
     if (err) { toast.error("Gagal menyimpan"); return; }

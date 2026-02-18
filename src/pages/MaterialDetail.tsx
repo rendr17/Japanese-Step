@@ -307,6 +307,7 @@ const MaterialDetail = () => {
             vocabulary={material.vocabulary as any}
             grammarNotes={material.grammar_notes as any}
             culturalNote={material.cultural_note as any}
+            indonesianTranslation={(material as any).indonesian_translation as string | null}
           />
         </div>
 
