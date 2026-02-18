@@ -131,7 +131,10 @@ const ExamSimulasi = () => {
               </div>
             </CardHeader>
             <CardContent>
-              <Button className="w-full bg-jft text-jft-foreground hover:bg-jft/90">
+              <Button
+                className="w-full bg-jft text-jft-foreground hover:bg-jft/90"
+                onClick={() => navigate("/exam/jft")}
+              >
                 Mulai JFT
                 <ChevronRight size={16} />
               </Button>

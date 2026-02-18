@@ -45,13 +45,16 @@ const ExamResults = () => {
 
   const answers = result.answers as any[];
   const percentage = Math.round((result.score / result.total_questions) * 100);
-  const passed = percentage >= 60;
+  const isJft = result.exam_type === "jft";
+  const passed = percentage >= (isJft ? 70 : 60);
   const minutes = Math.floor(result.time_taken_seconds / 60);
   const seconds = result.time_taken_seconds % 60;
 
   // Section breakdown
-  const sections = ["vocabulary", "grammar", "reading"];
-  const sectionLabels: Record<string, string> = { vocabulary: "Vocabulary", grammar: "Grammar", reading: "Reading" };
+  const jftSections = ["kanji_reading", "vocabulary", "conversation", "situational"];
+  const jftLabels: Record<string, string> = { kanji_reading: "Kanji Reading", vocabulary: "Vocabulary", conversation: "Conversation", situational: "Situational" };
+  const sections = isJft ? jftSections : ["vocabulary", "grammar", "reading"];
+  const sectionLabels: Record<string, string> = isJft ? jftLabels : { vocabulary: "Vocabulary", grammar: "Grammar", reading: "Reading" };
   const sectionData = sections.map((s) => {
     const sectionAnswers = answers.filter((a) => a.section === s);
     const correct = sectionAnswers.filter((a) => a.correct).length;
@@ -97,7 +100,7 @@ const ExamResults = () => {
           <div className="flex items-center justify-center gap-6 text-sm text-muted-foreground">
             <span className="flex items-center gap-1.5">
               <Target size={14} />
-              JLPT {result.level.toUpperCase()}
+              {isJft ? "JFT Basic" : `JLPT ${result.level.toUpperCase()}`}
             </span>
             <span className="flex items-center gap-1.5">
               <Clock size={14} />
@@ -196,8 +199,8 @@ const ExamResults = () => {
           Dashboard
         </Button>
         <Button
-          className="flex-1 bg-jlpt text-jlpt-foreground hover:bg-jlpt/90"
-          onClick={() => navigate(`/exam/jlpt/${result.level}`)}
+          className={`flex-1 ${isJft ? "bg-jft text-jft-foreground hover:bg-jft/90" : "bg-jlpt text-jlpt-foreground hover:bg-jlpt/90"}`}
+          onClick={() => navigate(isJft ? "/exam/jft" : `/exam/jlpt/${result.level}`)}
         >
           <RotateCcw size={16} />
           Ujian Ulang
