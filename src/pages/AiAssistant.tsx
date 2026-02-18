@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
+import { useAuth } from "@/contexts/AuthContext";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Send, Plus, Trash2, MessageSquare, Search, Bot, User,
@@ -26,6 +27,7 @@ const suggestedPrompts = [
 ];
 
 const AiAssistant = () => {
+  const { user } = useAuth();
   const isMobile = useIsMobile();
   const [activeConvId, setActiveConvId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
@@ -55,7 +57,7 @@ const AiAssistant = () => {
       setActiveConvId(convId);
     }
 
-    await sendMessage(text, convId);
+    await sendMessage(text, convId, user!);
     refetch();
   };
 

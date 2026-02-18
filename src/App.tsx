@@ -3,6 +3,8 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { AuthProvider } from "@/contexts/AuthContext";
+import ProtectedRoute from "@/components/ProtectedRoute";
 import AppLayout from "./components/layout/AppLayout";
 import Index from "./pages/Index";
 import Materials from "./pages/Materials";
@@ -21,32 +23,36 @@ const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          {/* Auth routes (no layout) */}
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/onboarding" element={<Onboarding />} />
+    <AuthProvider>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
+            {/* Auth routes (no layout) */}
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/onboarding" element={<Onboarding />} />
 
-          {/* App routes (with layout) */}
-          <Route element={<AppLayout />}>
-            <Route path="/" element={<Index />} />
-            <Route path="/materials" element={<Materials />} />
-            <Route path="/materials/:id" element={<MaterialDetail />} />
-            <Route path="/materials/:id/edit" element={<MaterialEditor />} />
-            <Route path="/vocabulary" element={<Vocabulary />} />
-            <Route path="/ai-tools/analyzer" element={<SentenceAnalyzer />} />
-            <Route path="/ai-assistant" element={<AiAssistant />} />
-            <Route path="/ai-tools/generate" element={<MaterialGenerator />} />
-          </Route>
+            {/* Protected app routes (with layout) */}
+            <Route element={<ProtectedRoute />}>
+              <Route element={<AppLayout />}>
+                <Route path="/" element={<Index />} />
+                <Route path="/materials" element={<Materials />} />
+                <Route path="/materials/:id" element={<MaterialDetail />} />
+                <Route path="/materials/:id/edit" element={<MaterialEditor />} />
+                <Route path="/vocabulary" element={<Vocabulary />} />
+                <Route path="/ai-tools/analyzer" element={<SentenceAnalyzer />} />
+                <Route path="/ai-assistant" element={<AiAssistant />} />
+                <Route path="/ai-tools/generate" element={<MaterialGenerator />} />
+              </Route>
+            </Route>
 
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </TooltipProvider>
+    </AuthProvider>
   </QueryClientProvider>
 );
 
