@@ -23,6 +23,7 @@ import JlptExamSession from "./pages/JlptExamSession";
 import JftExamSetup from "./pages/JftExamSetup";
 import JftExamSession from "./pages/JftExamSession";
 import ExamResults from "./pages/ExamResults";
+import AdminQuestions from "./pages/AdminQuestions";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -55,6 +56,7 @@ const App = () => (
                 <Route path="/exam/jlpt/:level" element={<JlptExamSetup />} />
                 <Route path="/exam/jft" element={<JftExamSetup />} />
                 <Route path="/exam/results/:id" element={<ExamResults />} />
+                <Route path="/admin/questions" element={<AdminQuestions />} />
               </Route>
             </Route>
 

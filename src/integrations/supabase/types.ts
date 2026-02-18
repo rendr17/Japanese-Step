@@ -75,34 +75,55 @@ export type Database = {
       }
       exam_questions: {
         Row: {
+          audio_prompt: string | null
           correct_answer: number
           created_at: string
           difficulty: number
+          exam_type: string
+          explanation: string | null
           id: string
+          image_prompt: string | null
+          is_active: boolean
           level: string
           options: Json
           question_text: string
           section: string
+          tags: string[] | null
+          transcript: string | null
         }
         Insert: {
+          audio_prompt?: string | null
           correct_answer: number
           created_at?: string
           difficulty?: number
+          exam_type?: string
+          explanation?: string | null
           id?: string
+          image_prompt?: string | null
+          is_active?: boolean
           level: string
           options: Json
           question_text: string
           section: string
+          tags?: string[] | null
+          transcript?: string | null
         }
         Update: {
+          audio_prompt?: string | null
           correct_answer?: number
           created_at?: string
           difficulty?: number
+          exam_type?: string
+          explanation?: string | null
           id?: string
+          image_prompt?: string | null
+          is_active?: boolean
           level?: string
           options?: Json
           question_text?: string
           section?: string
+          tags?: string[] | null
+          transcript?: string | null
         }
         Relationships: []
       }
@@ -267,6 +288,24 @@ export type Database = {
           },
         ]
       }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
       vocab_bank: {
         Row: {
           audio_url: string | null
@@ -319,9 +358,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
+      app_role: "admin" | "moderator" | "user"
       jlpt_level: "n5" | "n4" | "n3" | "n2" | "n1" | "none"
       learning_path: "jlpt_academic" | "jft_practical"
       material_category: "grammar" | "reading" | "conversation" | "vocabulary"
@@ -453,6 +499,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      app_role: ["admin", "moderator", "user"],
       jlpt_level: ["n5", "n4", "n3", "n2", "n1", "none"],
       learning_path: ["jlpt_academic", "jft_practical"],
       material_category: ["grammar", "reading", "conversation", "vocabulary"],
