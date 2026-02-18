@@ -20,7 +20,7 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    const charTarget = length === "short" ? 1500 : length === "long" ? 5000 : 2500;
+    const charTarget = length === "short" ? 3000 : length === "long" ? 8000 : 5000;
 
     const typePrompts: Record<string, string> = {
       dialogue: `Generate a natural Japanese conversation about "${topic}" for JLPT ${level.toUpperCase()} learners.
