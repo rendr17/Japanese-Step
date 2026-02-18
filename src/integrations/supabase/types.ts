@@ -73,6 +73,75 @@ export type Database = {
           },
         ]
       }
+      exam_questions: {
+        Row: {
+          correct_answer: number
+          created_at: string
+          difficulty: number
+          id: string
+          level: string
+          options: Json
+          question_text: string
+          section: string
+        }
+        Insert: {
+          correct_answer: number
+          created_at?: string
+          difficulty?: number
+          id?: string
+          level: string
+          options: Json
+          question_text: string
+          section: string
+        }
+        Update: {
+          correct_answer?: number
+          created_at?: string
+          difficulty?: number
+          id?: string
+          level?: string
+          options?: Json
+          question_text?: string
+          section?: string
+        }
+        Relationships: []
+      }
+      exam_results: {
+        Row: {
+          answers: Json
+          created_at: string
+          exam_type: string
+          id: string
+          level: string
+          score: number
+          time_taken_seconds: number
+          total_questions: number
+          user_id: string
+        }
+        Insert: {
+          answers: Json
+          created_at?: string
+          exam_type: string
+          id?: string
+          level: string
+          score: number
+          time_taken_seconds: number
+          total_questions: number
+          user_id: string
+        }
+        Update: {
+          answers?: Json
+          created_at?: string
+          exam_type?: string
+          id?: string
+          level?: string
+          score?: number
+          time_taken_seconds?: number
+          total_questions?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       materials: {
         Row: {
           category: Database["public"]["Enums"]["material_category"]
