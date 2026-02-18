@@ -20,7 +20,7 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    const charTarget = length === "short" ? 700 : length === "long" ? 2000 : 1400;
+    const charTarget = length === "short" ? 1500 : length === "long" ? 5000 : 2500;
 
     const typePrompts: Record<string, string> = {
       dialogue: `Generate a natural Japanese conversation about "${topic}" for JLPT ${level.toUpperCase()} learners.
@@ -67,7 +67,7 @@ Return using the provided tool.`,
       },
       body: JSON.stringify({
         model: "google/gemini-3-flash-preview",
-        max_tokens: 8192,
+        max_tokens: 16384,
         messages: [
           {
             role: "system",
