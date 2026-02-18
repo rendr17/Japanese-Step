@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Upload, FileText, ClipboardPaste, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -5,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
 import type { ImportSettings } from "@/hooks/useImportMaterial";
 
 interface Props {
@@ -17,18 +19,57 @@ interface Props {
 }
 
 const ImportInputStep = ({ rawText, setRawText, settings, setSettings, onAnalyze, isAnalyzing }: Props) => {
+  const [isParsing, setIsParsing] = useState(false);
+
+  const extractTextFromPdf = async (file: File): Promise<string> => {
+    const pdfjsLib = await import("pdfjs-dist");
+    pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
+
+    const arrayBuffer = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    const pages: string[] = [];
+
+    const maxPages = Math.min(pdf.numPages, 50);
+    for (let i = 1; i <= maxPages; i++) {
+      const page = await pdf.getPage(i);
+      const textContent = await page.getTextContent();
+      const pageText = textContent.items
+        .map((item: any) => item.str)
+        .join(" ");
+      pages.push(pageText);
+    }
+
+    if (pdf.numPages > 50) {
+      pages.push(`\n[... ${pdf.numPages - 50} halaman lainnya tidak diproses]`);
+    }
+
+    return pages.join("\n\n");
+  };
+
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     setSettings({ ...settings, fileName: file.name, sourceType: "upload" });
+
     if (file.name.endsWith(".txt") || file.type === "text/plain") {
       const text = await file.text();
       setRawText(text);
+    } else if (file.type === "application/pdf" || file.name.endsWith(".pdf")) {
+      setIsParsing(true);
+      try {
+        const text = await extractTextFromPdf(file);
+        setRawText(text);
+        toast.success(`PDF berhasil diekstrak (${text.length.toLocaleString()} karakter)`);
+      } catch (err) {
+        console.error("PDF parse error:", err);
+        toast.error("Gagal membaca PDF. Coba paste teksnya secara manual.");
+      } finally {
+        setIsParsing(false);
+      }
     } else {
-      setRawText(`[File: ${file.name}]\nUntuk PDF/DOCX, silakan copy-paste isi teksnya ke tab "Paste Text".`);
+      setRawText(`[File: ${file.name}]\nFormat file ini belum didukung. Silakan gunakan PDF atau TXT.`);
     }
   };
-
   return (
     <div className="space-y-6">
       <Tabs defaultValue="paste" onValueChange={(v) => setSettings({ ...settings, sourceType: v === "upload" ? "upload" : "paste" })}>
@@ -41,14 +82,19 @@ const ImportInputStep = ({ rawText, setRawText, settings, setSettings, onAnalyze
           <Card className="p-6">
             <div className="border-2 border-dashed border-border rounded-lg p-8 text-center hover:border-primary/40 transition-colors">
               <FileText size={40} className="mx-auto mb-3 text-muted-foreground" />
-              <p className="text-sm text-muted-foreground mb-3">Upload file .txt untuk import otomatis</p>
-              <p className="text-xs text-muted-foreground mb-4">Untuk PDF/DOCX, disarankan copy-paste teksnya ke tab "Paste Text"</p>
+              <p className="text-sm text-muted-foreground mb-3">Upload file PDF atau TXT untuk import otomatis</p>
+              <p className="text-xs text-muted-foreground mb-4">PDF akan diekstrak teksnya secara otomatis (maks. 50 halaman)</p>
               <label className="cursor-pointer">
-                <input type="file" accept=".txt,.text" onChange={handleFileUpload} className="hidden" />
-                <Button variant="outline" asChild><span>Pilih File</span></Button>
+                <input type="file" accept=".pdf,.txt,.text" onChange={handleFileUpload} className="hidden" />
+                <Button variant="outline" asChild disabled={isParsing}>
+                  <span>{isParsing ? <><Loader2 size={14} className="animate-spin mr-2" />Membaca PDF...</> : "Pilih File"}</span>
+                </Button>
               </label>
               {settings.sourceType === "upload" && settings.fileName !== "Pasted text" && (
                 <p className="text-sm text-primary mt-3">📄 {settings.fileName}</p>
+              )}
+              {rawText && settings.sourceType === "upload" && (
+                <p className="text-xs text-muted-foreground mt-2">{rawText.length.toLocaleString()} karakter diekstrak</p>
               )}
             </div>
           </Card>
