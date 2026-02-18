@@ -4,6 +4,7 @@ import { useFlashcardSession } from "@/hooks/useFlashcards";
 import FlashcardCard from "@/components/flashcard/FlashcardCard";
 import AnswerButtons from "@/components/flashcard/AnswerButtons";
 import SessionComplete from "@/components/flashcard/SessionComplete";
+import AnkiImportDialog from "@/components/flashcard/AnkiImportDialog";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -76,9 +77,12 @@ const Flashcards = () => {
         <p className="text-muted-foreground">
           Semua kartu sudah direview! Tambahkan kosakata baru atau tunggu jadwal review berikutnya.
         </p>
-        <Button variant="outline" onClick={() => window.location.href = "/vocabulary"}>
-          Tambah Kosakata
-        </Button>
+        <div className="flex gap-2">
+          <AnkiImportDialog onImportComplete={() => window.location.reload()} />
+          <Button variant="outline" onClick={() => window.location.href = "/vocabulary"}>
+            Tambah Kosakata
+          </Button>
+        </div>
       </div>
     );
   }
@@ -100,13 +104,16 @@ const Flashcards = () => {
         className="flex items-center justify-between"
       >
         <h1 className="text-2xl font-serif font-bold text-foreground">Flashcard Review</h1>
-        <Collapsible open={settingsOpen} onOpenChange={setSettingsOpen}>
-          <CollapsibleTrigger asChild>
-            <Button variant="ghost" size="icon">
-              <Settings2 size={20} />
-            </Button>
-          </CollapsibleTrigger>
-        </Collapsible>
+        <div className="flex items-center gap-2">
+          <AnkiImportDialog onImportComplete={() => window.location.reload()} />
+          <Collapsible open={settingsOpen} onOpenChange={setSettingsOpen}>
+            <CollapsibleTrigger asChild>
+              <Button variant="ghost" size="icon">
+                <Settings2 size={20} />
+              </Button>
+            </CollapsibleTrigger>
+          </Collapsible>
+        </div>
       </motion.div>
 
       {/* Settings panel */}
