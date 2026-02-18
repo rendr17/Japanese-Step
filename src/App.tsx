@@ -20,6 +20,8 @@ import MaterialGenerator from "./pages/MaterialGenerator";
 import ExamSimulasi from "./pages/ExamSimulasi";
 import JlptExamSetup from "./pages/JlptExamSetup";
 import JlptExamSession from "./pages/JlptExamSession";
+import JftExamSetup from "./pages/JftExamSetup";
+import JftExamSession from "./pages/JftExamSession";
 import ExamResults from "./pages/ExamResults";
 import NotFound from "./pages/NotFound";
 
@@ -51,6 +53,7 @@ const App = () => (
                 <Route path="/ai-tools/generate" element={<MaterialGenerator />} />
                 <Route path="/exam" element={<ExamSimulasi />} />
                 <Route path="/exam/jlpt/:level" element={<JlptExamSetup />} />
+                <Route path="/exam/jft" element={<JftExamSetup />} />
                 <Route path="/exam/results/:id" element={<ExamResults />} />
               </Route>
             </Route>
@@ -58,6 +61,7 @@ const App = () => (
             {/* Full-screen exam session (no layout) */}
             <Route element={<ProtectedRoute />}>
               <Route path="/exam/jlpt/:level/start" element={<JlptExamSession />} />
+              <Route path="/exam/jft/start" element={<JftExamSession />} />
             </Route>
 
             <Route path="*" element={<NotFound />} />
