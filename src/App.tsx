@@ -25,6 +25,7 @@ import JftExamSession from "./pages/JftExamSession";
 import ExamResults from "./pages/ExamResults";
 import AdminQuestions from "./pages/AdminQuestions";
 import MaterialImport from "./pages/MaterialImport";
+import SettingsPage from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -59,6 +60,7 @@ const App = () => (
                 <Route path="/exam/jft" element={<JftExamSetup />} />
                 <Route path="/exam/results/:id" element={<ExamResults />} />
                 <Route path="/admin/questions" element={<AdminQuestions />} />
+                <Route path="/settings" element={<SettingsPage />} />
               </Route>
             </Route>
 

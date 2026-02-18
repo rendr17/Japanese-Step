@@ -273,28 +273,73 @@ export type Database = {
       }
       profiles: {
         Row: {
+          achievement_notifications: boolean | null
+          animations_enabled: boolean | null
+          audio_speed: string | null
+          auto_play_pronunciation: boolean | null
+          avatar_url: string | null
           created_at: string
           current_path: Database["public"]["Enums"]["learning_path"]
           daily_goal_xp: number
+          default_jlpt_level: string | null
           display_name: string | null
+          email_reminders: boolean | null
+          font_size: string | null
+          furigana_display: string | null
           id: string
+          reduce_motion: boolean | null
+          srs_reminders: boolean | null
+          study_reminder_time: string | null
           theme_preference: string
+          tts_voice: string | null
+          ui_language: string | null
+          weekly_report: boolean | null
         }
         Insert: {
+          achievement_notifications?: boolean | null
+          animations_enabled?: boolean | null
+          audio_speed?: string | null
+          auto_play_pronunciation?: boolean | null
+          avatar_url?: string | null
           created_at?: string
           current_path?: Database["public"]["Enums"]["learning_path"]
           daily_goal_xp?: number
+          default_jlpt_level?: string | null
           display_name?: string | null
+          email_reminders?: boolean | null
+          font_size?: string | null
+          furigana_display?: string | null
           id: string
+          reduce_motion?: boolean | null
+          srs_reminders?: boolean | null
+          study_reminder_time?: string | null
           theme_preference?: string
+          tts_voice?: string | null
+          ui_language?: string | null
+          weekly_report?: boolean | null
         }
         Update: {
+          achievement_notifications?: boolean | null
+          animations_enabled?: boolean | null
+          audio_speed?: string | null
+          auto_play_pronunciation?: boolean | null
+          avatar_url?: string | null
           created_at?: string
           current_path?: Database["public"]["Enums"]["learning_path"]
           daily_goal_xp?: number
+          default_jlpt_level?: string | null
           display_name?: string | null
+          email_reminders?: boolean | null
+          font_size?: string | null
+          furigana_display?: string | null
           id?: string
+          reduce_motion?: boolean | null
+          srs_reminders?: boolean | null
+          study_reminder_time?: string | null
           theme_preference?: string
+          tts_voice?: string | null
+          ui_language?: string | null
+          weekly_report?: boolean | null
         }
         Relationships: []
       }
