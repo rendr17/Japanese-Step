@@ -1,38 +1,42 @@
 
 
-## Update Target Karakter ke ~1500 / ~2500 / ~5000
+## Tampilkan Kosakata, Catatan Grammar, dan Catatan Budaya di Halaman Detail Materi
 
-### Perubahan di 2 File
+### Masalah
+Saat ini, ketika materi di-generate oleh AI, data kosakata, catatan grammar, dan catatan budaya hanya ditampilkan di halaman generator. Ketika materi disimpan ke database, hanya konten utama (HTML) yang tersimpan. Data tambahan tersebut hilang dan tidak muncul di halaman detail materi.
 
-**1. Frontend: `src/pages/MaterialGenerator.tsx`**
-- Update label di `lengthOptions`:
-  - Pendek: ~700 --> ~1500 karakter
-  - Sedang: ~1400 --> ~2500 karakter
-  - Panjang: ~2000 --> ~5000 karakter
+### Solusi
 
-**2. Backend: `supabase/functions/generate-material/index.ts`**
-- Update `charTarget` (baris 23):
-  - short: 700 --> 1500
-  - medium: 1400 --> 2500
-  - long: 2000 --> 5000
-- `max_tokens` sudah 8192, mungkin perlu dinaikkan ke 16384 untuk mengakomodasi output ~5000 karakter Jepang + vocabulary + grammar notes
+#### 1. Tambah kolom baru di tabel `materials`
+Tambahkan 3 kolom baru:
+- `vocabulary` (JSONB, nullable) - menyimpan array kosakata `[{kanji, kana, meaning}]`
+- `grammar_notes` (JSONB, nullable) - menyimpan array catatan grammar `[{pattern, explanation}]`
+- `cultural_note` (TEXT, nullable) - menyimpan catatan budaya
+
+#### 2. Update proses penyimpanan di MaterialGenerator
+Saat menyimpan materi, ikut sertakan data `vocabulary`, `grammar_notes`, dan `cultural_note` ke dalam insert query.
+
+#### 3. Tampilkan di MaterialDetail
+Setelah konten utama, tambahkan 3 bagian baru:
+- **Kosakata** - Tabel dengan kolom Kanji, Kana, Arti (sama seperti tampilan di generator)
+- **Catatan Grammar** - Collapsible section dengan pola grammar dan penjelasannya
+- **Catatan Budaya** - Card sederhana dengan teks catatan budaya
 
 ### Detail Teknis
 
+**Migration SQL:**
 ```text
-// Edge function - sebelum:
-const charTarget = length === "short" ? 700 : length === "long" ? 2000 : 1400;
-
-// Edge function - sesudah:
-const charTarget = length === "short" ? 1500 : length === "long" ? 5000 : 2500;
-
-// max_tokens: 8192 --> 16384
+ALTER TABLE materials
+  ADD COLUMN vocabulary jsonb DEFAULT NULL,
+  ADD COLUMN grammar_notes jsonb DEFAULT NULL,
+  ADD COLUMN cultural_note text DEFAULT NULL;
 ```
 
-```text
-// Frontend labels - sesudah:
-{ value: "short", label: "Pendek", chars: "~1500 karakter" }
-{ value: "medium", label: "Sedang", chars: "~2500 karakter" }
-{ value: "long", label: "Panjang", chars: "~5000 karakter" }
-```
+**MaterialGenerator.tsx** - Update insert query untuk menyertakan 3 kolom baru.
 
+**MaterialDetail.tsx** - Tambahkan 3 section baru setelah konten utama:
+- Tabel kosakata (jika ada data)
+- Collapsible catatan grammar (jika ada data)
+- Card catatan budaya (jika ada data)
+
+Desain mengikuti pola yang sudah ada di MaterialGenerator (zen-card, tabel, collapsible).
