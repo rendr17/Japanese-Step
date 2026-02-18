@@ -1,3 +1,5 @@
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   ClipboardCheck, BookOpen, Clock, ChevronRight, Target,
@@ -47,6 +49,9 @@ const item = {
 };
 
 const ExamSimulasi = () => {
+  const navigate = useNavigate();
+  const [selectedLevel, setSelectedLevel] = useState("n5");
+
   return (
     <motion.div
       variants={container}
@@ -88,14 +93,22 @@ const ExamSimulasi = () => {
                   <Badge
                     key={level}
                     variant="outline"
-                    className="border-jlpt/30 text-jlpt hover:bg-jlpt hover:text-jlpt-foreground cursor-pointer transition-colors"
+                    className={`cursor-pointer transition-colors ${
+                      selectedLevel === level.toLowerCase()
+                        ? "bg-jlpt text-jlpt-foreground border-jlpt"
+                        : "border-jlpt/30 text-jlpt hover:bg-jlpt hover:text-jlpt-foreground"
+                    }`}
+                    onClick={() => setSelectedLevel(level.toLowerCase())}
                   >
                     {level}
                   </Badge>
                 ))}
               </div>
-              <Button className="w-full bg-jlpt text-jlpt-foreground hover:bg-jlpt/90">
-                Mulai JLPT
+              <Button
+                className="w-full bg-jlpt text-jlpt-foreground hover:bg-jlpt/90"
+                onClick={() => navigate(`/exam/jlpt/${selectedLevel}`)}
+              >
+                Mulai JLPT {selectedLevel.toUpperCase()}
                 <ChevronRight size={16} />
               </Button>
             </CardContent>

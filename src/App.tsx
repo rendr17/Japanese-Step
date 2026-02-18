@@ -18,6 +18,9 @@ import SentenceAnalyzer from "./pages/SentenceAnalyzer";
 import AiAssistant from "./pages/AiAssistant";
 import MaterialGenerator from "./pages/MaterialGenerator";
 import ExamSimulasi from "./pages/ExamSimulasi";
+import JlptExamSetup from "./pages/JlptExamSetup";
+import JlptExamSession from "./pages/JlptExamSession";
+import ExamResults from "./pages/ExamResults";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -47,7 +50,14 @@ const App = () => (
                 <Route path="/ai-assistant" element={<AiAssistant />} />
                 <Route path="/ai-tools/generate" element={<MaterialGenerator />} />
                 <Route path="/exam" element={<ExamSimulasi />} />
+                <Route path="/exam/jlpt/:level" element={<JlptExamSetup />} />
+                <Route path="/exam/results/:id" element={<ExamResults />} />
               </Route>
+            </Route>
+
+            {/* Full-screen exam session (no layout) */}
+            <Route element={<ProtectedRoute />}>
+              <Route path="/exam/jlpt/:level/start" element={<JlptExamSession />} />
             </Route>
 
             <Route path="*" element={<NotFound />} />
