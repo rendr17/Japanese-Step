@@ -217,7 +217,7 @@ const MaterialGenerator = () => {
       level: level as any,
       content,
       user_id: user.id,
-      tags: ["ai-generated", type],
+      tags: ["shima-rin", type],
       vocabulary: result.vocabulary.length > 0 ? result.vocabulary : null,
       grammar_notes: result.grammar_notes.length > 0 ? result.grammar_notes : null,
       cultural_note: result.cultural_note || null,
@@ -248,7 +248,7 @@ const MaterialGenerator = () => {
             meaning: v.meaning,
             jlpt_level: level as any,
             user_id: user.id,
-            tags: ["ai-generated"],
+            tags: ["shima-rin"],
           });
           if (!vocabErr) newCount++;
         }
