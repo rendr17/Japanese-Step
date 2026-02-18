@@ -168,6 +168,8 @@ export type Database = {
           category: Database["public"]["Enums"]["material_category"]
           content: Json | null
           created_at: string
+          cultural_note: string | null
+          grammar_notes: Json | null
           id: string
           is_favorite: boolean
           level: Database["public"]["Enums"]["jlpt_level"]
@@ -175,11 +177,14 @@ export type Database = {
           title: string
           updated_at: string
           user_id: string
+          vocabulary: Json | null
         }
         Insert: {
           category: Database["public"]["Enums"]["material_category"]
           content?: Json | null
           created_at?: string
+          cultural_note?: string | null
+          grammar_notes?: Json | null
           id?: string
           is_favorite?: boolean
           level?: Database["public"]["Enums"]["jlpt_level"]
@@ -187,11 +192,14 @@ export type Database = {
           title: string
           updated_at?: string
           user_id: string
+          vocabulary?: Json | null
         }
         Update: {
           category?: Database["public"]["Enums"]["material_category"]
           content?: Json | null
           created_at?: string
+          cultural_note?: string | null
+          grammar_notes?: Json | null
           id?: string
           is_favorite?: boolean
           level?: Database["public"]["Enums"]["jlpt_level"]
@@ -199,6 +207,7 @@ export type Database = {
           title?: string
           updated_at?: string
           user_id?: string
+          vocabulary?: Json | null
         }
         Relationships: [
           {

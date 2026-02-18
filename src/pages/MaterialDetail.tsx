@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useMaterialDetail, useRelatedMaterials } from "@/hooks/useMaterialDetail";
+import MaterialSupplementary from "@/components/material/MaterialSupplementary";
 import { useToggleFavorite, useDeleteMaterial } from "@/hooks/useMaterials";
 import { toast } from "sonner";
 import { generateHTML } from "@tiptap/react";
@@ -300,6 +301,13 @@ const MaterialDetail = () => {
         >
           <style>{!showFurigana ? `rt { display: none; }` : ""}</style>
           <div dangerouslySetInnerHTML={{ __html: html }} />
+
+          {/* Supplementary: Vocabulary, Grammar, Cultural Note */}
+          <MaterialSupplementary
+            vocabulary={material.vocabulary as any}
+            grammarNotes={material.grammar_notes as any}
+            culturalNote={material.cultural_note as any}
+          />
         </div>
 
         {/* Selection toolbar */}
