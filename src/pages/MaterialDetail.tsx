@@ -56,7 +56,12 @@ function jsonToPlainText(json: any): string {
 function jsonToHtml(json: any): string {
   if (!json) return "";
   try {
-    return generateHTML(json, extensions);
+    let html = generateHTML(json, extensions);
+    // The content may contain literal <ruby> tags stored as text - unescape them
+    html = html.replace(/&lt;ruby&gt;/g, "<ruby>").replace(/&lt;\/ruby&gt;/g, "</ruby>")
+      .replace(/&lt;rt&gt;/g, "<rt>").replace(/&lt;\/rt&gt;/g, "</rt>")
+      .replace(/&lt;rp&gt;/g, "<rp>").replace(/&lt;\/rp&gt;/g, "</rp>");
+    return html;
   } catch {
     return typeof json === "string" ? json : "<p>Konten tidak dapat ditampilkan.</p>";
   }
