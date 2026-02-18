@@ -48,9 +48,9 @@ const typeOptions = [
 ];
 
 const lengthOptions = [
-  { value: "short", label: "Pendek", chars: "~1500 karakter" },
-  { value: "medium", label: "Sedang", chars: "~2500 karakter" },
-  { value: "long", label: "Panjang", chars: "~5000 karakter" },
+  { value: "short", label: "Pendek", chars: "~3000 karakter" },
+  { value: "medium", label: "Sedang", chars: "~5000 karakter" },
+  { value: "long", label: "Panjang", chars: "~8000 karakter" },
 ];
 
 /** Convert HTML string to a Tiptap-compatible JSON doc */
