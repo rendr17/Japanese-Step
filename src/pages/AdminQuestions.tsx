@@ -1,15 +1,17 @@
 import { useState } from "react";
 import { useAdminQuestions, ExamQuestion, QuestionFormData } from "@/hooks/useAdminQuestions";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Plus, Search, Pencil, ShieldAlert } from "lucide-react";
+import { Plus, Search, Pencil, ShieldAlert, Sparkles, Loader2, Check } from "lucide-react";
+import { toast } from "@/hooks/use-toast";
 
 const EXAM_TYPES = [
   { value: "jlpt", label: "JLPT" },
@@ -46,6 +48,56 @@ export default function AdminQuestions() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<QuestionFormData>({ ...emptyForm });
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // AI Generate state
+  const [aiDialogOpen, setAiDialogOpen] = useState(false);
+  const [aiConfig, setAiConfig] = useState({ exam_type: "jlpt", level: "n5", section: "vocabulary", count: 5 });
+  const [aiGenerating, setAiGenerating] = useState(false);
+  const [aiResults, setAiResults] = useState<any[]>([]);
+  const [aiSaving, setAiSaving] = useState(false);
+
+  const handleAiGenerate = async () => {
+    setAiGenerating(true);
+    setAiResults([]);
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-questions", {
+        body: aiConfig,
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      setAiResults(data.questions || []);
+      toast({ title: `${(data.questions || []).length} soal berhasil di-generate` });
+    } catch (e: any) {
+      toast({ title: "Gagal generate soal", description: e.message, variant: "destructive" });
+    } finally {
+      setAiGenerating(false);
+    }
+  };
+
+  const handleSaveAiQuestions = async () => {
+    setAiSaving(true);
+    try {
+      for (const q of aiResults) {
+        await createQuestion({
+          exam_type: aiConfig.exam_type,
+          level: aiConfig.level,
+          section: aiConfig.section,
+          question_text: q.question_text,
+          options: q.options.slice(0, 4) as [string, string, string, string],
+          correct_answer: q.correct_answer,
+          explanation: q.explanation || "",
+          difficulty: q.difficulty || 3,
+        });
+      }
+      toast({ title: `${aiResults.length} soal berhasil disimpan ke bank soal` });
+      setAiDialogOpen(false);
+      setAiResults([]);
+    } catch (e: any) {
+      toast({ title: "Gagal menyimpan soal", description: e.message, variant: "destructive" });
+    } finally {
+      setAiSaving(false);
+    }
+  };
 
   if (isAdminLoading) {
     return <div className="flex items-center justify-center h-64 text-muted-foreground">Memuat...</div>;
@@ -115,9 +167,14 @@ export default function AdminQuestions() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-3">
         <h1 className="text-2xl font-bold">Kelola Bank Soal</h1>
-        <Button onClick={openAdd}><Plus className="h-4 w-4 mr-2" />Tambah Soal Manual</Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => { setAiResults([]); setAiDialogOpen(true); }}>
+            <Sparkles className="h-4 w-4 mr-2" />Generate dengan AI
+          </Button>
+          <Button onClick={openAdd}><Plus className="h-4 w-4 mr-2" />Tambah Soal Manual</Button>
+        </div>
       </div>
 
       {/* Filters */}
@@ -329,6 +386,87 @@ export default function AdminQuestions() {
                 {isSaving ? "Menyimpan..." : editingId ? "Simpan Perubahan" : "Tambah Soal"}
               </Button>
             </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* AI Generate Dialog */}
+      <Dialog open={aiDialogOpen} onOpenChange={setAiDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-primary" />
+              Generate Soal dengan AI
+            </DialogTitle>
+            <DialogDescription>Pilih konfigurasi lalu generate soal otomatis</DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 mt-2">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="space-y-1">
+                <Label>Tipe Ujian</Label>
+                <Select value={aiConfig.exam_type} onValueChange={v => setAiConfig(c => ({ ...c, exam_type: v, section: v === "jft" ? "kanji_reading" : "vocabulary" }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>{EXAM_TYPES.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <Label>Level</Label>
+                <Select value={aiConfig.level} onValueChange={v => setAiConfig(c => ({ ...c, level: v }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>{LEVELS.map(l => <SelectItem key={l} value={l}>{l.toUpperCase()}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <Label>Section</Label>
+                <Select value={aiConfig.section} onValueChange={v => setAiConfig(c => ({ ...c, section: v }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {(aiConfig.exam_type === "jft" ? JFT_SECTIONS : JLPT_SECTIONS).map(s => (
+                      <SelectItem key={s} value={s}>{sectionLabel(s)}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <Label>Jumlah</Label>
+                <Select value={String(aiConfig.count)} onValueChange={v => setAiConfig(c => ({ ...c, count: parseInt(v) }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {[3, 5, 10].map(n => <SelectItem key={n} value={String(n)}>{n} soal</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <Button onClick={handleAiGenerate} disabled={aiGenerating} className="w-full">
+              {aiGenerating ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Generating...</> : <><Sparkles className="h-4 w-4 mr-2" />Generate Soal</>}
+            </Button>
+
+            {/* Preview results */}
+            {aiResults.length > 0 && (
+              <div className="space-y-3 border-t pt-4">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-medium">{aiResults.length} soal di-generate:</p>
+                  <Button size="sm" onClick={handleSaveAiQuestions} disabled={aiSaving}>
+                    {aiSaving ? <><Loader2 className="h-3 w-3 mr-1 animate-spin" />Menyimpan...</> : <><Check className="h-3 w-3 mr-1" />Simpan Semua ke Bank Soal</>}
+                  </Button>
+                </div>
+                {aiResults.map((q, i) => (
+                  <div key={i} className="p-3 rounded-lg border bg-muted/30 space-y-2">
+                    <p className="font-medium text-sm">{i + 1}. {q.question_text}</p>
+                    <div className="grid grid-cols-2 gap-1">
+                      {q.options?.map((opt: string, j: number) => (
+                        <p key={j} className={`text-xs px-2 py-1 rounded ${j === q.correct_answer ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground"}`}>
+                          {String.fromCharCode(65 + j)}. {opt}
+                        </p>
+                      ))}
+                    </div>
+                    {q.explanation && <p className="text-xs text-muted-foreground italic">💡 {q.explanation}</p>}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </DialogContent>
       </Dialog>
