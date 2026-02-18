@@ -9,6 +9,7 @@ import {
   BarChart3,
   Settings,
   ClipboardCheck,
+  FileUp,
   Languages,
   Bot,
   Sparkles,
@@ -26,6 +27,7 @@ import { cn } from "@/lib/utils";
 const navItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/" },
   { icon: BookOpen, label: "Materi Belajar", path: "/materials" },
+  { icon: FileUp, label: "Import Materi", path: "/materials/import" },
   { icon: BookMarked, label: "Kosakata Saya", path: "/vocabulary" },
   { icon: Languages, label: "Analisis Kalimat", path: "/ai-tools/analyzer" },
   { icon: Sparkles, label: "Generator Materi", path: "/ai-tools/generate" },

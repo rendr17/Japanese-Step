@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Search, X, Star, MoreVertical, Copy, Trash2, Pencil, BookOpen, MessageCircle, FileText, Languages, SlidersHorizontal } from "lucide-react";
+import { Plus, Search, X, Star, MoreVertical, Copy, Trash2, Pencil, BookOpen, MessageCircle, FileText, Languages, SlidersHorizontal, FileUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -221,10 +221,16 @@ const Materials = () => {
       >
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
           <h1 className="text-2xl font-serif font-bold text-foreground">Materi Belajar Saya</h1>
-          <Button className="gap-2 shrink-0" onClick={() => navigate("/materials/new/edit")}>
-            <Plus size={16} />
-            Tambah Materi
-          </Button>
+          <div className="flex gap-2 shrink-0">
+            <Button variant="outline" className="gap-2" onClick={() => navigate("/materials/import")} >
+              <FileUp size={16} />
+              Import dari File
+            </Button>
+            <Button className="gap-2" onClick={() => navigate("/materials/new/edit")}>
+              <Plus size={16} />
+              Tambah Materi
+            </Button>
+          </div>
         </div>
 
         {/* Filters row */}

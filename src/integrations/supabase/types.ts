@@ -163,6 +163,45 @@ export type Database = {
         }
         Relationships: []
       }
+      import_history: {
+        Row: {
+          created_at: string
+          file_name: string
+          id: string
+          settings: Json | null
+          source_category: string
+          source_type: string
+          template: string | null
+          total_materials: number | null
+          total_vocab: number | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          file_name: string
+          id?: string
+          settings?: Json | null
+          source_category: string
+          source_type: string
+          template?: string | null
+          total_materials?: number | null
+          total_vocab?: number | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          file_name?: string
+          id?: string
+          settings?: Json | null
+          source_category?: string
+          source_type?: string
+          template?: string | null
+          total_materials?: number | null
+          total_vocab?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       materials: {
         Row: {
           category: Database["public"]["Enums"]["material_category"]
@@ -174,6 +213,7 @@ export type Database = {
           indonesian_translation: string | null
           is_favorite: boolean
           level: Database["public"]["Enums"]["jlpt_level"]
+          source_import_id: string | null
           tags: string[] | null
           title: string
           updated_at: string
@@ -190,6 +230,7 @@ export type Database = {
           indonesian_translation?: string | null
           is_favorite?: boolean
           level?: Database["public"]["Enums"]["jlpt_level"]
+          source_import_id?: string | null
           tags?: string[] | null
           title: string
           updated_at?: string
@@ -206,6 +247,7 @@ export type Database = {
           indonesian_translation?: string | null
           is_favorite?: boolean
           level?: Database["public"]["Enums"]["jlpt_level"]
+          source_import_id?: string | null
           tags?: string[] | null
           title?: string
           updated_at?: string
@@ -213,6 +255,13 @@ export type Database = {
           vocabulary?: Json | null
         }
         Relationships: [
+          {
+            foreignKeyName: "materials_source_import_id_fkey"
+            columns: ["source_import_id"]
+            isOneToOne: false
+            referencedRelation: "import_history"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "materials_user_id_fkey"
             columns: ["user_id"]
