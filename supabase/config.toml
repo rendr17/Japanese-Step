@@ -11,3 +11,6 @@ verify_jwt = false
 
 [functions.generate-material]
 verify_jwt = false
+
+[functions.generate-questions]
+verify_jwt = false
