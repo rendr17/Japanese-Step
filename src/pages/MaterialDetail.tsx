@@ -75,7 +75,11 @@ const SelectionToolbar = ({ position, onClose }: { position: { x: number; y: num
       <Button variant="ghost" size="sm" className="h-7 text-xs gap-1.5" onClick={() => { toast.info("Fitur Flashcard segera hadir"); onClose(); }}>
         📇 Flashcard
       </Button>
-      <Button variant="ghost" size="sm" className="h-7 text-xs gap-1.5" onClick={() => { toast.info("Fitur AI Analyze segera hadir"); onClose(); }}>
+      <Button variant="ghost" size="sm" className="h-7 text-xs gap-1.5" onClick={() => {
+        const sel = window.getSelection()?.toString().trim();
+        if (sel) window.location.href = `/ai-tools/analyzer?q=${encodeURIComponent(sel)}`;
+        onClose();
+      }}>
         🤖 Analyze
       </Button>
       <Button variant="ghost" size="sm" className="h-7 text-xs gap-1.5" onClick={() => { toast.info("Fitur Highlight segera hadir"); onClose(); }}>
