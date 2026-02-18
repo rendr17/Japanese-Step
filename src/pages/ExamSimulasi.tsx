@@ -1,13 +1,16 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import {
   ClipboardCheck, BookOpen, Clock, ChevronRight, Target,
-  TrendingUp, Award, Calendar, Languages, BarChart3,
+  TrendingUp, Award, Calendar, Languages, BarChart3, Settings,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   ChartContainer, ChartTooltip, ChartTooltipContent,
 } from "@/components/ui/chart";
@@ -49,8 +52,24 @@ const item = {
 };
 
 const ExamSimulasi = () => {
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [selectedLevel, setSelectedLevel] = useState("n5");
+
+  const { data: isAdmin } = useQuery({
+    queryKey: ["is-admin", user?.id],
+    queryFn: async () => {
+      if (!user) return false;
+      const { data } = await supabase
+        .from("user_roles" as any)
+        .select("role")
+        .eq("user_id", user.id)
+        .eq("role", "admin")
+        .maybeSingle();
+      return !!data;
+    },
+    enabled: !!user,
+  });
 
   return (
     <motion.div
@@ -60,14 +79,22 @@ const ExamSimulasi = () => {
       className="space-y-8 max-w-5xl mx-auto"
     >
       {/* Header */}
-      <motion.div variants={item}>
-        <h1 className="text-2xl font-serif font-bold text-foreground flex items-center gap-2">
-          <ClipboardCheck className="text-primary" size={28} />
-          Ujian Simulasi
-        </h1>
-        <p className="text-muted-foreground mt-1">
-          Latih kemampuanmu dengan simulasi ujian resmi
-        </p>
+      <motion.div variants={item} className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-serif font-bold text-foreground flex items-center gap-2">
+            <ClipboardCheck className="text-primary" size={28} />
+            Ujian Simulasi
+          </h1>
+          <p className="text-muted-foreground mt-1">
+            Latih kemampuanmu dengan simulasi ujian resmi
+          </p>
+        </div>
+        {isAdmin && (
+          <Button variant="outline" onClick={() => navigate("/admin/questions")}>
+            <Settings className="h-4 w-4 mr-2" />
+            Kelola Soal
+          </Button>
+        )}
       </motion.div>
 
       {/* Exam Type Cards */}
