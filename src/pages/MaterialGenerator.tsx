@@ -217,7 +217,10 @@ const MaterialGenerator = () => {
       content,
       user_id: user.id,
       tags: ["ai-generated", type],
-    });
+      vocabulary: result.vocabulary.length > 0 ? result.vocabulary : null,
+      grammar_notes: result.grammar_notes.length > 0 ? result.grammar_notes : null,
+      cultural_note: result.cultural_note || null,
+    } as any);
 
     if (err) { toast.error("Gagal menyimpan"); return; }
 
