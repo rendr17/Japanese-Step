@@ -1,34 +1,38 @@
 
 
-## Update Target Karakter di Edge Function
+## Update Target Karakter ke ~1500 / ~2500 / ~5000
 
-### Masalah
-Label di frontend sudah diubah ke ~700/~1400/~2000 karakter, tetapi edge function `generate-material` masih menggunakan target lama (100/300/500 karakter). Selain itu, perlu menambahkan `max_tokens` agar output AI tidak terpotong.
+### Perubahan di 2 File
 
-### Perubahan
+**1. Frontend: `src/pages/MaterialGenerator.tsx`**
+- Update label di `lengthOptions`:
+  - Pendek: ~700 --> ~1500 karakter
+  - Sedang: ~1400 --> ~2500 karakter
+  - Panjang: ~2000 --> ~5000 karakter
 
-**File: `supabase/functions/generate-material/index.ts`**
-
-1. **Ubah `charTarget`** (baris 23):
-   - `short`: 100 --> 700
-   - `medium`: 300 --> 1400
-   - `long`: 500 --> 2000
-
-2. **Tambah `max_tokens: 8192`** di body request ke AI gateway agar konten panjang tidak terpotong di tengah jalan.
+**2. Backend: `supabase/functions/generate-material/index.ts`**
+- Update `charTarget` (baris 23):
+  - short: 700 --> 1500
+  - medium: 1400 --> 2500
+  - long: 2000 --> 5000
+- `max_tokens` sudah 8192, mungkin perlu dinaikkan ke 16384 untuk mengakomodasi output ~5000 karakter Jepang + vocabulary + grammar notes
 
 ### Detail Teknis
 
 ```text
-// Sebelum:
-const charTarget = length === "short" ? 100 : length === "long" ? 500 : 300;
-
-// Sesudah:
+// Edge function - sebelum:
 const charTarget = length === "short" ? 700 : length === "long" ? 2000 : 1400;
+
+// Edge function - sesudah:
+const charTarget = length === "short" ? 1500 : length === "long" ? 5000 : 2500;
+
+// max_tokens: 8192 --> 16384
 ```
 
-Dan di body fetch AI gateway, tambahkan:
 ```text
-max_tokens: 8192,
+// Frontend labels - sesudah:
+{ value: "short", label: "Pendek", chars: "~1500 karakter" }
+{ value: "medium", label: "Sedang", chars: "~2500 karakter" }
+{ value: "long", label: "Panjang", chars: "~5000 karakter" }
 ```
 
-Tidak ada perubahan file lain yang diperlukan.
