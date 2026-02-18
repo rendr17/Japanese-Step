@@ -17,6 +17,7 @@ import Vocabulary from "./pages/Vocabulary";
 import SentenceAnalyzer from "./pages/SentenceAnalyzer";
 import AiAssistant from "./pages/AiAssistant";
 import MaterialGenerator from "./pages/MaterialGenerator";
+import ExamSimulasi from "./pages/ExamSimulasi";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -45,6 +46,7 @@ const App = () => (
                 <Route path="/ai-tools/analyzer" element={<SentenceAnalyzer />} />
                 <Route path="/ai-assistant" element={<AiAssistant />} />
                 <Route path="/ai-tools/generate" element={<MaterialGenerator />} />
+                <Route path="/exam" element={<ExamSimulasi />} />
               </Route>
             </Route>
 
