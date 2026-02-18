@@ -1,84 +1,34 @@
 
 
-## Tambah Terjemahan Indonesia + Tampilkan Kosakata/Grammar/Budaya di Detail Materi
+## Update Target Karakter di Edge Function
 
-### Ringkasan
-1. Tambah kolom baru di database untuk menyimpan vocabulary, grammar_notes, cultural_note, dan translation
-2. Update edge function AI agar juga generate terjemahan bahasa Indonesia
-3. Update proses simpan di MaterialGenerator agar menyimpan semua data tambahan
-4. Tampilkan semua data di halaman MaterialDetail dengan tombol toggle untuk terjemahan
+### Masalah
+Label di frontend sudah diubah ke ~700/~1400/~2000 karakter, tetapi edge function `generate-material` masih menggunakan target lama (100/300/500 karakter). Selain itu, perlu menambahkan `max_tokens` agar output AI tidak terpotong.
 
-### 1. Database Migration
-Tambah 4 kolom baru pada tabel `materials`:
+### Perubahan
 
-```sql
-ALTER TABLE materials
-  ADD COLUMN vocabulary jsonb DEFAULT '[]',
-  ADD COLUMN grammar_notes jsonb DEFAULT '[]',
-  ADD COLUMN cultural_note text DEFAULT '',
-  ADD COLUMN translation text DEFAULT '';
-```
+**File: `supabase/functions/generate-material/index.ts`**
 
-### 2. Update Edge Function (generate-material)
-Tambah field `translation` di tool schema agar AI juga menghasilkan terjemahan bahasa Indonesia dari konten utama.
+1. **Ubah `charTarget`** (baris 23):
+   - `short`: 100 --> 700
+   - `medium`: 300 --> 1400
+   - `long`: 500 --> 2000
 
-```text
-translation: { type: "string", description: "Full Indonesian translation of the content" }
-```
-
-Tambahkan juga instruksi di prompt: "Sertakan terjemahan lengkap dalam bahasa Indonesia."
-
-### 3. Update MaterialGenerator.tsx (handleSaveToMaterials)
-Saat simpan materi, sertakan data tambahan ke payload insert:
-
-```text
-vocabulary: result.vocabulary,
-grammar_notes: result.grammar_notes,
-cultural_note: result.cultural_note,
-translation: result.translation ?? "",
-```
-
-### 4. Update MaterialDetail.tsx
-Tambahkan di bawah konten utama:
-
-**Tombol Terjemahan Indonesia**
-- Tombol "Tampilkan Terjemahan" di bawah konten
-- Klik untuk toggle menampilkan/menyembunyikan terjemahan
-- Terjemahan ditampilkan dalam box dengan background berbeda
-
-**Section Kosakata**
-- Tabel dengan kolom: Kanji, Kana, Arti
-- Hanya muncul jika data vocabulary ada
-
-**Section Catatan Grammar**
-- Daftar collapsible dengan pattern dan penjelasan
-
-**Section Catatan Budaya**
-- Paragraf informatif, hanya muncul jika ada data
+2. **Tambah `max_tokens: 8192`** di body request ke AI gateway agar konten panjang tidak terpotong di tengah jalan.
 
 ### Detail Teknis
 
-**File yang diubah:**
-- `supabase/functions/generate-material/index.ts` -- tambah field translation di tool schema + prompt
-- `src/pages/MaterialGenerator.tsx` -- tambah vocabulary, grammar_notes, cultural_note, translation ke payload insert
-- `src/pages/MaterialDetail.tsx` -- tampilkan 4 section baru (terjemahan toggle, kosakata, grammar, budaya)
-
-**Alur UI di MaterialDetail:**
-
 ```text
-[Konten Jepang]
-     |
-[Tombol: 🇮🇩 Tampilkan Terjemahan]
-     | (klik)
-     v
-[Box terjemahan bahasa Indonesia - bisa di-hide lagi]
-     |
-[Section: Kosakata - tabel kanji/kana/arti]
-     |
-[Section: Catatan Grammar - collapsible]
-     |
-[Section: Catatan Budaya - paragraf]
-     |
-[Materi Terkait]
+// Sebelum:
+const charTarget = length === "short" ? 100 : length === "long" ? 500 : 300;
+
+// Sesudah:
+const charTarget = length === "short" ? 700 : length === "long" ? 2000 : 1400;
 ```
 
+Dan di body fetch AI gateway, tambahkan:
+```text
+max_tokens: 8192,
+```
+
+Tidak ada perubahan file lain yang diperlukan.
