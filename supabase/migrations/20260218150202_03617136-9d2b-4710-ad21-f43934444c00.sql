@@ -1,0 +1,1 @@
+ALTER TABLE materials ADD COLUMN indonesian_translation text DEFAULT NULL;

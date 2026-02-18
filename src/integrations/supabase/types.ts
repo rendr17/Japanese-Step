@@ -171,6 +171,7 @@ export type Database = {
           cultural_note: string | null
           grammar_notes: Json | null
           id: string
+          indonesian_translation: string | null
           is_favorite: boolean
           level: Database["public"]["Enums"]["jlpt_level"]
           tags: string[] | null
@@ -186,6 +187,7 @@ export type Database = {
           cultural_note?: string | null
           grammar_notes?: Json | null
           id?: string
+          indonesian_translation?: string | null
           is_favorite?: boolean
           level?: Database["public"]["Enums"]["jlpt_level"]
           tags?: string[] | null
@@ -201,6 +203,7 @@ export type Database = {
           cultural_note?: string | null
           grammar_notes?: Json | null
           id?: string
+          indonesian_translation?: string | null
           is_favorite?: boolean
           level?: Database["public"]["Enums"]["jlpt_level"]
           tags?: string[] | null

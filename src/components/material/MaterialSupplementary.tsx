@@ -1,12 +1,14 @@
 import { useState } from "react";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronDown, ChevronUp, Languages } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Table, TableHeader, TableHead, TableBody, TableRow, TableCell,
 } from "@/components/ui/table";
 import {
   Collapsible, CollapsibleContent, CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface VocabItem {
   kanji: string;
@@ -23,19 +25,56 @@ interface Props {
   vocabulary?: VocabItem[] | null;
   grammarNotes?: GrammarNote[] | null;
   culturalNote?: string | null;
+  indonesianTranslation?: string | null;
 }
 
-const MaterialSupplementary = ({ vocabulary, grammarNotes, culturalNote }: Props) => {
+const MaterialSupplementary = ({ vocabulary, grammarNotes, culturalNote, indonesianTranslation }: Props) => {
   const [grammarOpen, setGrammarOpen] = useState(true);
+  const [showTranslation, setShowTranslation] = useState(false);
 
   const hasVocab = vocabulary && vocabulary.length > 0;
   const hasGrammar = grammarNotes && grammarNotes.length > 0;
   const hasCultural = !!culturalNote;
+  const hasTranslation = !!indonesianTranslation;
 
-  if (!hasVocab && !hasGrammar && !hasCultural) return null;
+  if (!hasVocab && !hasGrammar && !hasCultural && !hasTranslation) return null;
 
   return (
     <div className="space-y-6 mt-10 pt-8 border-t border-border">
+      {/* Translation toggle button */}
+      {hasTranslation && (
+        <div>
+          <Button
+            variant={showTranslation ? "default" : "outline"}
+            size="sm"
+            className="gap-2 text-xs"
+            onClick={() => setShowTranslation(!showTranslation)}
+          >
+            <Languages size={14} />
+            {showTranslation ? "Sembunyikan Terjemahan" : "Tampilkan Terjemahan Indonesia"}
+          </Button>
+          <AnimatePresence>
+            {showTranslation && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                className="overflow-hidden"
+              >
+                <div className="zen-card p-5 mt-3">
+                  <h3 className="text-sm font-medium text-foreground mb-3 flex items-center gap-2">
+                    🇮🇩 Terjemahan Bahasa Indonesia
+                  </h3>
+                  <div className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line">
+                    {indonesianTranslation}
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      )}
+
       {/* Vocabulary */}
       {hasVocab && (
         <div className="zen-card p-0 overflow-hidden">
