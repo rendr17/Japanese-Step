@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { motion, AnimatePresence } from "framer-motion";
@@ -52,6 +52,101 @@ const lengthOptions = [
   { value: "medium", label: "Sedang", chars: "~300 karakter" },
   { value: "long", label: "Panjang", chars: "~500 karakter" },
 ];
+
+/** Convert HTML string to a Tiptap-compatible JSON doc */
+function htmlToTiptapJson(html: string): any {
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(`<body>${html}</body>`, "text/html");
+  const body = doc.body;
+
+  function parseNode(node: Node): any {
+    if (node.nodeType === Node.TEXT_NODE) {
+      const text = node.textContent || "";
+      if (!text) return null;
+      return { type: "text", text };
+    }
+
+    if (node.nodeType !== Node.ELEMENT_NODE) return null;
+    const el = node as HTMLElement;
+    const tag = el.tagName.toLowerCase();
+
+    const childContent = Array.from(el.childNodes)
+      .map(parseNode)
+      .filter(Boolean);
+
+    // Handle inline marks
+    if (tag === "strong" || tag === "b") {
+      return childContent.map((c: any) => ({
+        ...c,
+        marks: [...(c.marks || []), { type: "bold" }],
+      }));
+    }
+    if (tag === "em" || tag === "i") {
+      return childContent.map((c: any) => ({
+        ...c,
+        marks: [...(c.marks || []), { type: "italic" }],
+      }));
+    }
+    if (tag === "u") {
+      return childContent.map((c: any) => ({
+        ...c,
+        marks: [...(c.marks || []), { type: "underline" }],
+      }));
+    }
+
+    // Ruby tags: preserve as raw HTML text so generateHTML can render them
+    if (tag === "ruby") {
+      return { type: "text", text: el.outerHTML };
+    }
+
+    // Block elements
+    if (tag === "p") {
+      return { type: "paragraph", content: childContent.flat().length ? childContent.flat() : [{ type: "text", text: " " }] };
+    }
+    if (tag === "h1" || tag === "h2" || tag === "h3") {
+      const level = parseInt(tag[1]);
+      return { type: "heading", attrs: { level }, content: childContent.flat().length ? childContent.flat() : [{ type: "text", text: " " }] };
+    }
+    if (tag === "br") {
+      return { type: "hardBreak" };
+    }
+    if (tag === "ul" || tag === "ol") {
+      return { type: tag === "ul" ? "bulletList" : "orderedList", content: childContent.flat() };
+    }
+    if (tag === "li") {
+      // Wrap li children in a paragraph if they're inline
+      const hasBlock = childContent.flat().some((c: any) => ["paragraph", "heading", "bulletList", "orderedList"].includes(c?.type));
+      if (hasBlock) return { type: "listItem", content: childContent.flat() };
+      return { type: "listItem", content: [{ type: "paragraph", content: childContent.flat().length ? childContent.flat() : [{ type: "text", text: " " }] }] };
+    }
+    if (tag === "hr") {
+      return { type: "horizontalRule" };
+    }
+
+    // Fallback: wrap children in paragraph or return children directly
+    if (childContent.flat().length) return childContent.flat();
+    return null;
+  }
+
+  const content = Array.from(body.childNodes)
+    .map(parseNode)
+    .flat()
+    .filter(Boolean);
+
+  // Ensure all top-level nodes are block nodes
+  const blocks = content.map((node: any) => {
+    if (["paragraph", "heading", "bulletList", "orderedList", "horizontalRule", "listItem", "hardBreak"].includes(node?.type)) {
+      return node;
+    }
+    // Wrap inline content in a paragraph
+    return { type: "paragraph", content: [node] };
+  });
+
+  return {
+    type: "doc",
+    content: blocks.length ? blocks : [{ type: "paragraph", content: [{ type: "text", text: " " }] }],
+  };
+}
 
 const MaterialGenerator = () => {
   const navigate = useNavigate();
@@ -112,13 +207,9 @@ const MaterialGenerator = () => {
       grammar: "grammar",
     };
 
-    // Convert HTML to tiptap-compatible JSON
-    const content = {
-      type: "doc",
-      content: [
-        { type: "paragraph", content: [{ type: "text", text: isEditing ? "— Konten diedit —" : "" }] },
-      ],
-    };
+    // Convert HTML string to Tiptap-compatible JSON using a temporary DOM parser
+    const htmlToSave = isEditing ? editingHtml : result.content_html;
+    const content = htmlToTiptapJson(htmlToSave);
 
     const { error: err } = await supabase.from("materials").insert({
       title: result.title,
