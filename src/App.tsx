@@ -24,6 +24,7 @@ import JftExamSetup from "./pages/JftExamSetup";
 import JftExamSession from "./pages/JftExamSession";
 import ExamResults from "./pages/ExamResults";
 import AdminQuestions from "./pages/AdminQuestions";
+import MaterialImport from "./pages/MaterialImport";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -46,6 +47,7 @@ const App = () => (
               <Route element={<AppLayout />}>
                 <Route path="/" element={<Index />} />
                 <Route path="/materials" element={<Materials />} />
+                <Route path="/materials/import" element={<MaterialImport />} />
                 <Route path="/materials/:id" element={<MaterialDetail />} />
                 <Route path="/materials/:id/edit" element={<MaterialEditor />} />
                 <Route path="/vocabulary" element={<Vocabulary />} />
