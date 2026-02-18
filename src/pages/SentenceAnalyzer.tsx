@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Sparkles, Plus, BookOpen, MessageCircle, ChevronDown, ChevronUp,
@@ -40,6 +41,7 @@ const SentenceAnalyzer = () => {
   const [searchParams] = useSearchParams();
   const [sentence, setSentence] = useState(searchParams.get("q") ?? "");
   const { analyze, result, isLoading, error, clear, remaining } = useAnalyzeSentence();
+  const { user } = useAuth();
   const addVocab = useAddVocab();
   const [addedTokens, setAddedTokens] = useState<Set<number>>(new Set());
   const [culturalOpen, setCulturalOpen] = useState(false);
@@ -60,7 +62,6 @@ const SentenceAnalyzer = () => {
   };
 
   const handleAddToken = async (token: AnalysisToken, idx: number) => {
-    const { data: { user } } = await supabase.auth.getUser();
     if (!user) { toast.error("Login terlebih dahulu"); return; }
     addVocab.mutate(
       { kanji: token.kanji !== token.kana ? token.kanji : null, kana: token.kana, meaning: token.meaning, tags: ["analyzer"] },
@@ -74,7 +75,6 @@ const SentenceAnalyzer = () => {
   };
 
   const handleAddAllTokens = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
     if (!user || !result) return;
     const substantive = result.tokens.filter((t) => ["Noun", "Verb", "Adjective", "Adverb"].includes(t.type));
     for (let i = 0; i < substantive.length; i++) {
@@ -91,9 +91,7 @@ const SentenceAnalyzer = () => {
   };
 
   const handleSaveAsMaterial = async () => {
-    if (!result) return;
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { toast.error("Login terlebih dahulu"); return; }
+    if (!result || !user) return;
 
     const content = {
       type: "doc",

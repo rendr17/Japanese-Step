@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 export interface ChatMessage {
   id: string;
@@ -25,11 +26,11 @@ interface UserContext {
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-chat`;
 
 export function useChatConversations() {
+  const { user } = useAuth();
   const [conversations, setConversations] = useState<ChatConversation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchConversations = useCallback(async () => {
-    const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
     const { data } = await supabase
       .from("chat_conversations")
@@ -39,12 +40,11 @@ export function useChatConversations() {
       .limit(50);
     setConversations((data as ChatConversation[]) ?? []);
     setIsLoading(false);
-  }, []);
+  }, [user]);
 
   useEffect(() => { fetchConversations(); }, [fetchConversations]);
 
   const createConversation = async (title?: string): Promise<string | null> => {
-    const { data: { user } } = await supabase.auth.getUser();
     if (!user) return null;
     const { data, error } = await supabase
       .from("chat_conversations")
@@ -84,8 +84,7 @@ export function useChatMessages(conversationId: string | null) {
     })();
   }, [conversationId]);
 
-  const sendMessage = async (content: string, conversationId: string) => {
-    const { data: { user } } = await supabase.auth.getUser();
+  const sendMessage = async (content: string, conversationId: string, user: { id: string }) => {
     if (!user) return;
 
     // Save user message

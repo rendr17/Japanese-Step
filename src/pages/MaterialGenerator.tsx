@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Sparkles, BookOpen, MessageCircle, GraduationCap, Save,
@@ -54,6 +55,7 @@ const lengthOptions = [
 
 const MaterialGenerator = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const addVocab = useAddVocab();
 
   const [topic, setTopic] = useState("");
@@ -102,9 +104,7 @@ const MaterialGenerator = () => {
   };
 
   const handleSaveToMaterials = async () => {
-    if (!result) return;
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { toast.error("Login terlebih dahulu"); return; }
+    if (!result || !user) return;
 
     const categoryMap: Record<string, "grammar" | "reading" | "conversation"> = {
       dialogue: "conversation",
