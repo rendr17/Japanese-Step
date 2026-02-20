@@ -12,8 +12,13 @@ interface FlashcardCardProps {
   showFurigana: "always" | "hover" | "never";
 }
 
+// Deteksi apakah teks berisi hanya karakter Jepang (bukan terjemahan Indonesia)
+const isJapaneseMeaning = (text: string) =>
+  /^[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FFF\s・ーっ、。]+$/.test(text.trim());
+
 const FlashcardCard = ({ card, isFlipped, onFlip, showFurigana }: FlashcardCardProps) => {
   const [furiganaVisible, setFuriganaVisible] = useState(showFurigana === "always");
+  const meaningIsJapanese = isJapaneseMeaning(card.meaning ?? "");
 
   const levelColors: Record<string, string> = {
     n5: "bg-secondary text-secondary-foreground",
@@ -102,8 +107,14 @@ const FlashcardCard = ({ card, isFlipped, onFlip, showFurigana }: FlashcardCardP
 
           {/* Indonesian meaning */}
           <div className="w-full max-w-sm border-t border-border pt-4 text-center">
-            <p className="text-xs text-muted-foreground uppercase tracking-widest mb-2">Arti</p>
-            <p className="text-2xl font-semibold text-foreground">{card.meaning || "—"}</p>
+            <p className="text-xs text-muted-foreground uppercase tracking-widest mb-2">Arti (Bahasa Indonesia)</p>
+            {meaningIsJapanese ? (
+              <p className="text-base italic text-muted-foreground">
+                Arti belum tersedia — gunakan tombol "Perbaiki Arti" di halaman flashcard
+              </p>
+            ) : (
+              <p className="text-2xl font-semibold text-foreground">{card.meaning || "—"}</p>
+            )}
           </div>
 
           {card.example_sentence && (
