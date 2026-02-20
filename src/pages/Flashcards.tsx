@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import { useFlashcardSession } from "@/hooks/useFlashcards";
 import FlashcardCard from "@/components/flashcard/FlashcardCard";
@@ -11,14 +11,68 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
-import { Clock, Layers, Target, Settings2, BookOpen } from "lucide-react";
+import { Clock, Layers, Target, Settings2, BookOpen, Wrench } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+
+const isJapaneseMeaning = (text: string) =>
+  /^[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FFF\s・ーっ、。]+$/.test(text.trim());
 
 const Flashcards = () => {
   const [maxCards, setMaxCards] = useState(20);
   const [showFurigana, setShowFurigana] = useState<"always" | "hover" | "never">("hover");
   const [autoPlayAudio, setAutoPlayAudio] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [isFixing, setIsFixing] = useState(false);
+  const [fixProgress, setFixProgress] = useState({ done: 0, total: 0 });
+
+  const handleFixBadMeanings = useCallback(async () => {
+    setIsFixing(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { toast.error("Silakan login terlebih dahulu"); return; }
+
+      const { data: allVocab, error } = await supabase
+        .from("vocab_bank")
+        .select("id, kanji, kana, meaning")
+        .eq("user_id", user.id);
+      if (error) throw error;
+
+      const badEntries = (allVocab ?? []).filter((v) => isJapaneseMeaning(v.meaning ?? ""));
+      if (badEntries.length === 0) {
+        toast.success("Semua arti sudah dalam Bahasa Indonesia! ✓");
+        setIsFixing(false);
+        return;
+      }
+
+      setFixProgress({ done: 0, total: badEntries.length });
+      toast.info(`Memperbaiki ${badEntries.length} kosakata...`);
+
+      let fixed = 0;
+      for (const entry of badEntries) {
+        try {
+          const { data, error: fnError } = await supabase.functions.invoke("vocab-ai-fill", {
+            body: { kanji: entry.kanji || entry.kana },
+          });
+          if (!fnError && data?.meaning) {
+            await supabase.from("vocab_bank").update({ meaning: data.meaning }).eq("id", entry.id);
+            fixed++;
+          }
+        } catch {
+          // skip individual failures
+        }
+        setFixProgress({ done: fixed, total: badEntries.length });
+      }
+
+      toast.success(`${fixed} dari ${badEntries.length} arti berhasil diperbaiki!`);
+      window.location.reload();
+    } catch (e) {
+      toast.error("Gagal memperbaiki data");
+    } finally {
+      setIsFixing(false);
+    }
+  }, []);
 
   const {
     currentCard,
@@ -105,6 +159,19 @@ const Flashcards = () => {
       >
         <h1 className="text-2xl font-serif font-bold text-foreground">Flashcard Review</h1>
         <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-1.5 text-xs"
+            onClick={handleFixBadMeanings}
+            disabled={isFixing}
+            title="Perbaiki arti yang masih berisi kana bukan Bahasa Indonesia"
+          >
+            <Wrench size={14} />
+            {isFixing
+              ? `Memperbaiki ${fixProgress.done}/${fixProgress.total}...`
+              : "Perbaiki Arti"}
+          </Button>
           <AnkiImportDialog onImportComplete={() => window.location.reload()} />
           <Collapsible open={settingsOpen} onOpenChange={setSettingsOpen}>
             <CollapsibleTrigger asChild>
