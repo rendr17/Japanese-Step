@@ -90,17 +90,19 @@ const FlashcardCard = ({ card, isFlipped, onFlip, showFurigana }: FlashcardCardP
           className="zen-card min-h-[320px] flex flex-col items-center justify-center gap-5 p-8 absolute inset-0"
           style={{ backfaceVisibility: "hidden", transform: "rotateY(180deg)" }}
         >
+          {/* Japanese word + reading */}
           <div className="text-center space-y-1">
-            <p className="text-2xl font-jp text-foreground font-medium">
+            <p className="text-4xl font-jp font-bold text-foreground">
               {card.kanji || card.kana}
             </p>
             {card.kanji && (
-              <p className="text-base font-jp text-muted-foreground">{card.kana}</p>
+              <p className="text-lg font-jp text-muted-foreground">{card.kana}</p>
             )}
           </div>
 
+          {/* Indonesian meaning */}
           <div className="w-full max-w-sm border-t border-border pt-4 text-center">
-            <p className="text-xs text-muted-foreground uppercase tracking-widest mb-1">Arti</p>
+            <p className="text-xs text-muted-foreground uppercase tracking-widest mb-2">Arti</p>
             <p className="text-2xl font-semibold text-foreground">{card.meaning || "—"}</p>
           </div>
 
