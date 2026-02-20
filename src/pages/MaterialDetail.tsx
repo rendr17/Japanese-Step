@@ -11,12 +11,10 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useMaterialDetail, useRelatedMaterials } from "@/hooks/useMaterialDetail";
 import MaterialSupplementary from "@/components/material/MaterialSupplementary";
 import { useToggleFavorite, useDeleteMaterial } from "@/hooks/useMaterials";
@@ -42,7 +40,6 @@ const categoryConfig: Record<string, { icon: React.ReactNode; label: string; col
 };
 
 function estimateReadingTime(text: string): number {
-  // Japanese: ~400-600 chars/min. English: ~200 words/min. Rough estimate.
   const charCount = text.replace(/\s/g, "").length;
   return Math.max(1, Math.ceil(charCount / 500));
 }
@@ -59,7 +56,8 @@ function jsonToHtml(json: any): string {
   if (!json) return "";
   try {
     let html = generateHTML(json, extensions);
-    html = html.replace(/&lt;ruby&gt;/g, "<ruby>").replace(/&lt;\/ruby&gt;/g, "</ruby>")
+    html = html
+      .replace(/&lt;ruby&gt;/g, "<ruby>").replace(/&lt;\/ruby&gt;/g, "</ruby>")
       .replace(/&lt;rt&gt;/g, "<rt>").replace(/&lt;\/rt&gt;/g, "</rt>")
       .replace(/&lt;rp&gt;/g, "<rp>").replace(/&lt;\/rp&gt;/g, "</rp>");
     return html;
@@ -68,63 +66,54 @@ function jsonToHtml(json: any): string {
   }
 }
 
-/** Convert kana in text nodes of an HTML string to romaji */
 function htmlToRomaji(html: string): string {
   const parser = new DOMParser();
   const doc = parser.parseFromString(html, "text/html");
-
   const walk = (node: Node) => {
     if (node.nodeType === Node.TEXT_NODE && node.textContent) {
       node.textContent = wanakana.toRomaji(node.textContent);
     } else {
-      // Skip <rt> tags when romaji mode is on (reading already converted)
-      if ((node as Element).tagName === "RT") {
+      if ((node as Element).tagName === "RT" || (node as Element).tagName === "RP") {
         node.textContent = "";
         return;
       }
       node.childNodes.forEach(walk);
     }
   };
-
   doc.body.childNodes.forEach(walk);
   return doc.body.innerHTML;
 }
 
 // ---------- Selection Toolbar ----------
-const SelectionToolbar = ({ position, onClose }: { position: { x: number; y: number }; onClose: () => void }) => {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 6 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0 }}
-      className="fixed z-50 flex items-center gap-1 rounded-lg border border-border bg-popover p-1 shadow-lg"
-      style={{ left: position.x, top: position.y }}
-    >
-      <Button variant="ghost" size="sm" className="h-7 text-xs gap-1.5" onClick={() => { toast.info("Fitur Flashcard segera hadir"); onClose(); }}>
-        📇 Flashcard
-      </Button>
-      <Button variant="ghost" size="sm" className="h-7 text-xs gap-1.5" onClick={() => {
-        const sel = window.getSelection()?.toString().trim();
-        if (sel) window.location.href = `/ai-tools/analyzer?q=${encodeURIComponent(sel)}`;
-        onClose();
-      }}>
-        🤖 Analyze
-      </Button>
-      <Button variant="ghost" size="sm" className="h-7 text-xs gap-1.5" onClick={() => { toast.info("Fitur Highlight segera hadir"); onClose(); }}>
-        🖍️ Highlight
-      </Button>
-    </motion.div>
-  );
-};
+const SelectionToolbar = ({ position, onClose }: { position: { x: number; y: number }; onClose: () => void }) => (
+  <motion.div
+    initial={{ opacity: 0, y: 6 }}
+    animate={{ opacity: 1, y: 0 }}
+    exit={{ opacity: 0 }}
+    className="fixed z-50 flex items-center gap-1 rounded-lg border border-border bg-popover p-1 shadow-lg"
+    style={{ left: position.x, top: position.y }}
+  >
+    <Button variant="ghost" size="sm" className="h-7 text-xs gap-1.5" onClick={() => { toast.info("Fitur Flashcard segera hadir"); onClose(); }}>
+      📇 Flashcard
+    </Button>
+    <Button variant="ghost" size="sm" className="h-7 text-xs gap-1.5" onClick={() => {
+      const sel = window.getSelection()?.toString().trim();
+      if (sel) window.location.href = `/ai-tools/analyzer?q=${encodeURIComponent(sel)}`;
+      onClose();
+    }}>
+      🤖 Analyze
+    </Button>
+    <Button variant="ghost" size="sm" className="h-7 text-xs gap-1.5" onClick={() => { toast.info("Fitur Highlight segera hadir"); onClose(); }}>
+      🖍️ Highlight
+    </Button>
+  </motion.div>
+);
 
 // ---------- Related Card ----------
 const RelatedCard = ({ material }: { material: any }) => {
   const cfg = categoryConfig[material.category] ?? categoryConfig.grammar;
   return (
-    <Link
-      to={`/materials/${material.id}`}
-      className="zen-card hover-lift block p-4"
-    >
+    <Link to={`/materials/${material.id}`} className="zen-card hover-lift block p-4">
       <div className="flex items-center gap-2 mb-2">
         <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium ${cfg.color}`}>
           {cfg.icon} {cfg.label}
@@ -145,6 +134,7 @@ const MaterialDetail = () => {
   const toggleFav = useToggleFavorite();
   const deleteMat = useDeleteMaterial();
 
+  // ── All hooks must be declared unconditionally before any early return ──
   const [showFurigana, setShowFurigana] = useState(true);
   const [showRomaji, setShowRomaji] = useState(false);
   const [fontSize, setFontSize] = useState(18);
@@ -153,7 +143,6 @@ const MaterialDetail = () => {
 
   const contentRef = useRef<HTMLDivElement>(null);
 
-  // Scroll-based reading progress
   useEffect(() => {
     const handleScroll = () => {
       const el = contentRef.current;
@@ -169,25 +158,18 @@ const MaterialDetail = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, [material]);
 
-  // Text selection handler
   const handleMouseUp = useCallback(() => {
     const sel = window.getSelection();
-    if (!sel || sel.isCollapsed || !sel.toString().trim()) {
-      setSelToolbar(null);
-      return;
-    }
+    if (!sel || sel.isCollapsed || !sel.toString().trim()) { setSelToolbar(null); return; }
     const range = sel.getRangeAt(0);
     const rect = range.getBoundingClientRect();
     setSelToolbar({ x: rect.left + rect.width / 2 - 100, y: rect.top - 44 });
   }, []);
 
-  // Derive HTML — must be before early returns to keep hook order stable
-  const rawHtml = useMemo(() => jsonToHtml(material?.content), [material?.content]);
-  const html = useMemo(
-    () => showRomaji ? htmlToRomaji(rawHtml) : rawHtml,
-    [rawHtml, showRomaji]
-  );
+  const rawHtml = useMemo(() => jsonToHtml(material?.content ?? null), [material?.content]);
+  const html = useMemo(() => showRomaji ? htmlToRomaji(rawHtml) : rawHtml, [rawHtml, showRomaji]);
 
+  // ── Early returns after all hooks ──
   if (isLoading) {
     return (
       <div className="max-w-[720px] mx-auto py-8 px-4 space-y-6">
@@ -210,6 +192,13 @@ const MaterialDetail = () => {
   const plainText = jsonToPlainText(material.content);
   const readingTime = estimateReadingTime(plainText);
   const cfg = categoryConfig[material.category] ?? categoryConfig.grammar;
+
+  // CSS for furigana/romaji display
+  const readingStyle = showRomaji
+    ? "ruby { display: contents; } rt, rp { display: none; }"
+    : !showFurigana
+    ? "rt { display: none; }"
+    : "";
 
   return (
     <>
@@ -262,24 +251,15 @@ const MaterialDetail = () => {
             <Pencil size={14} /> Edit
           </Button>
           <Button
-            variant="outline"
-            size="sm"
-            className="gap-1.5 text-xs"
-            onClick={() => {
-              toggleFav.mutate({ id: material.id, is_favorite: !material.is_favorite });
-            }}
+            variant="outline" size="sm" className="gap-1.5 text-xs"
+            onClick={() => toggleFav.mutate({ id: material.id, is_favorite: !material.is_favorite })}
           >
             <Star size={14} className={material.is_favorite ? "fill-accent text-accent" : ""} />
             {material.is_favorite ? "Favorit" : "Tandai"}
           </Button>
           <Button
-            variant="outline"
-            size="sm"
-            className="gap-1.5 text-xs"
-            onClick={() => {
-              navigator.clipboard.writeText(window.location.href);
-              toast.success("Link disalin");
-            }}
+            variant="outline" size="sm" className="gap-1.5 text-xs"
+            onClick={() => { navigator.clipboard.writeText(window.location.href); toast.success("Link disalin"); }}
           >
             <Share2 size={14} /> Share
           </Button>
@@ -309,7 +289,7 @@ const MaterialDetail = () => {
           <div className="flex items-center gap-2">
             <span className="text-xs text-muted-foreground">ふりがな</span>
             <Switch
-              checked={showFurigana}
+              checked={showFurigana && !showRomaji}
               onCheckedChange={(v) => { setShowFurigana(v); if (v) setShowRomaji(false); }}
               disabled={showRomaji}
             />
@@ -339,10 +319,9 @@ const MaterialDetail = () => {
           className="prose prose-sm max-w-none font-jp leading-[1.8]"
           style={{ fontSize: `${fontSize}px` }}
         >
-          <style>{(!showFurigana && !showRomaji) ? `rt { display: none; }` : showRomaji ? `ruby { display: contents; } rt, rp { display: none; }` : ""}</style>
+          {readingStyle && <style>{readingStyle}</style>}
           <div dangerouslySetInnerHTML={{ __html: html }} />
 
-          {/* Supplementary: Vocabulary, Grammar, Cultural Note */}
           <MaterialSupplementary
             vocabulary={material.vocabulary as any}
             grammarNotes={material.grammar_notes as any}
@@ -361,9 +340,7 @@ const MaterialDetail = () => {
           <section className="mt-16 pt-8 border-t border-border">
             <h2 className="text-xl font-serif font-bold text-foreground mb-6">Materi Terkait</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {related.map((r) => (
-                <RelatedCard key={r.id} material={r} />
-              ))}
+              {related.map((r) => <RelatedCard key={r.id} material={r} />)}
             </div>
           </section>
         )}
