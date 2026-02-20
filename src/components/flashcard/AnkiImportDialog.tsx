@@ -47,7 +47,11 @@ function parseAnkiText(text: string): ParsedCard[] {
 async function parseApkgFile(file: File): Promise<ParsedCard[]> {
   const [JSZip, initSqlJs] = await Promise.all([
     import("jszip").then((m) => m.default),
-    import("sql.js").then((m) => m.default),
+    import("sql.js").then((m) => {
+      // sql.js is CJS — handle both ESM default and direct module export
+      const fn = m.default ?? m;
+      return (typeof fn === "function" ? fn : (fn as any).default) as typeof fn;
+    }),
   ]);
 
   const zip = await JSZip.loadAsync(file);
