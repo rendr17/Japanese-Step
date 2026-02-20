@@ -1,150 +1,100 @@
 
+# Analisis & Rekomendasi Fitur untuk Nihongo-Step
 
-## Fitur Import Materi dari File
-
-Fitur ini memungkinkan user mengimpor materi belajar dari file (PDF/teks) atau paste text, lalu AI menganalisis dan menyusun konten menjadi materi terstruktur yang rapi. User bisa mereview, mengedit, split per bab, memilih bagian yang disimpan, dan mengekstrak kosakata.
-
-### Arsitektur Fitur
-
-Fitur ini dibangun sebagai wizard multi-step di satu halaman `/materials/import` dengan 5 tahap:
-
-```text
-[Input] -> [Analisis AI] -> [Preview & Edit] -> [Split & Pilih] -> [Simpan]
-```
+Setelah memeriksa seluruh kodebase, berikut temuan dan rekomendasi fitur berdasarkan prioritas:
 
 ---
 
-### 1. Database Migration
+## Masalah yang Perlu Diperbaiki (Bug / Data Palsu)
 
-Tambah tabel `import_history` untuk menyimpan riwayat import:
+### 1. XP Harian Hardcoded (Dashboard)
+Di `DailyGoalCard.tsx`, nilai XP saat ini (`currentXP = 25`) dikodekan secara manual dan tidak terhubung ke database. Artinya progress harian tidak pernah berubah meski user aktif belajar.
 
-```text
-CREATE TABLE import_history (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL,
-  file_name TEXT NOT NULL,
-  source_type TEXT NOT NULL,        -- 'upload', 'paste', 'scan'
-  source_category TEXT NOT NULL,    -- 'textbook', 'article', 'dialogue', 'notes'
-  template TEXT,                    -- 'minna_no_nihongo', null
-  total_materials INTEGER DEFAULT 0,
-  total_vocab INTEGER DEFAULT 0,
-  settings JSONB,                   -- simpan setting import untuk re-import
-  created_at TIMESTAMPTZ DEFAULT now()
-);
+**Solusi:** Buat tabel `daily_xp_logs` di database untuk melacak XP per hari per user, lalu sambungkan ke kartu ini.
 
--- Tambah kolom source_import_id di materials
-ALTER TABLE materials ADD COLUMN source_import_id UUID REFERENCES import_history(id) DEFAULT NULL;
+### 2. Riwayat Ujian Palsu (Exam Page)
+Di `ExamSimulasi.tsx`, data `pastResults` dan `scoreProgression` adalah array hardcoded statis, bukan data nyata dari database. Ujian memang ada di `exam_results`, tapi tidak ditampilkan di sini.
 
--- RLS policies
-ALTER TABLE import_history ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Users can manage their own imports" ON import_history FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+**Solusi:** Query tabel `exam_results` yang sudah ada dan tampilkan hasil ujian sesungguhnya di halaman ini.
+
+### 3. Badge SRS di Sidebar Hardcoded
+Di `AppSidebar.tsx`, badge Flashcards menampilkan angka `3` yang hardcoded:
 ```
+{ icon: Layers, label: "Flashcards (SRS)", path: "/flashcards", badge: 3 }
+```
+**Solusi:** Buat hook ringan yang query jumlah SRS yang jatuh tempo dan tampilkan angka real-time.
 
-### 2. Edge Function: `import-material`
+### 4. Statistik "Minggu Ini" Kosong
+Di `StatsOverview.tsx`, kartu "Minggu Ini" selalu `0 menit` karena tidak ada tracking waktu belajar sama sekali.
 
-Buat edge function baru `supabase/functions/import-material/index.ts` yang:
-- Menerima teks mentah (dari file atau paste)
-- Menerima opsi: source_category, template, language, level, split_mode
-- Mengirim ke AI Gateway (Lovable AI, model `google/gemini-3-flash-preview`) untuk:
-  - Mendeteksi struktur (bab, subjudul, kosakata, grammar, dialog)
-  - Menghasilkan ringkasan
-  - Mengekstrak kosakata (kanji, kana, meaning, level)
-  - Mengekstrak pola grammar
-  - Membuat catatan budaya
-  - Menghasilkan terjemahan Indonesia
-  - Jika template "Minna no Nihongo", auto-map ke section: Bunkei, Reibun, Kaiwa, Kotoba, Renshuu, Mondai
-- Return array sections yang siap ditampilkan di preview
-
-### 3. Halaman Import (`src/pages/MaterialImport.tsx`)
-
-Wizard multi-step dengan state management lokal:
-
-**Step 1 - Input**
-- 3 tab: Upload File | Paste Text | Foto/Scan
-- Upload: accept `.pdf, .txt, .doc, .docx` (gunakan `document--parse_document` di edge function / kirim sebagai teks)
-  - Karena edge function tidak bisa parse PDF langsung, file di-parse client-side: untuk `.txt` baca langsung, untuk PDF tampilkan info bahwa user perlu copy-paste teksnya
-- Paste: textarea besar
-- Pilihan metadata:
-  - Jenis sumber (dropdown): Buku pelajaran, Artikel, Dialog, Catatan pribadi
-  - Template (dropdown, opsional): Minna no Nihongo, (kosong)
-  - Bahasa penjelasan: Indonesia / English
-  - Target jalur: JLPT / JFT
-  - Level: N5-N1 (opsional)
-
-**Step 2 - Analisis & Preview**
-- Panggil edge function `import-material`
-- Tampilkan loading skeleton
-- Hasil: judul auto, ringkasan, sections, kosakata, grammar, catatan budaya
-- Setiap section bisa diedit (judul, konten) via inline editing
-- Toggle: "Simpan isi lengkap" (OFF) vs "Simpan ringkasan saja" (ON)
-- Jika "isi lengkap" ON, tampilkan reminder hak cipta
-
-**Step 3 - Split & Pilih**
-- Pilihan split mode: 1 materi, per Bab, per Subjudul, per panjang
-- Tampilkan daftar hasil split dengan checkbox
-- Per item: rename judul, pilih kategori (Grammar/Reading/Conversation/Vocabulary), auto-tags
-- User bisa uncheck bagian yang tidak mau disimpan
-
-**Step 4 - Ekstrak Kosakata**
-- Panel kosakata yang terdeteksi (tabel)
-- Checkbox per kata untuk pilih mana yang disimpan
-- Edit kanji/kana/arti inline
-- Tombol: "Simpan ke Kosakata Saya" dan "Simpan + Buat Flashcard SRS"
-
-**Step 5 - Simpan & Selesai**
-- Tombol "Simpan Materi"
-- Progress bar saat menyimpan batch
-- Setelah selesai: tampilkan ringkasan (X materi, Y kosakata)
-- Tombol: "Buka materi pertama", "Lihat semua hasil import", "Ekstrak kosakata"
-
-### 4. Tombol "Rapikan Format"
-
-Di Step 2 preview, tambahkan tombol:
-- "Rapikan Format" - minta AI membersihkan format (spasi, numbering, bullet)
-- Toggle "Tampilkan furigana otomatis"
-- Toggle "Bahasa penjelasan: Indonesia / English"
-
-### 5. Update Navigasi
-
-- **AppSidebar.tsx**: Tambah sub-item "Import Materi" di bawah "Materi Belajar" (atau bisa jadi item terpisah)
-- **Materials.tsx**: Tambah tombol "Import dari File" di samping "Tambah Materi"
-- **App.tsx**: Tambah route `/materials/import`
-
-### 6. Halaman Riwayat Import
-
-Tambahkan section di halaman import atau sebagai tab terpisah:
-- Daftar file yang pernah diimport
-- Total materi & kosakata per import
-- Aksi: "Import ulang" (load settings lama), "Hapus hasil import" (dengan konfirmasi)
+**Solusi:** Buat tabel `study_sessions` untuk mencatat waktu belajar, dan tampilkan total waktu mingguan.
 
 ---
 
-### Detail Teknis
+## Fitur Baru yang Direkomendasikan (Berdasarkan Prioritas)
 
-**File yang akan dibuat:**
-- `supabase/functions/import-material/index.ts` - Edge function untuk analisis AI
-- `src/pages/MaterialImport.tsx` - Halaman wizard import (komponen utama)
-- `src/components/import/ImportInputStep.tsx` - Step 1: input file/teks
-- `src/components/import/ImportPreviewStep.tsx` - Step 2: preview & edit
-- `src/components/import/ImportSplitStep.tsx` - Step 3: split & pilih
-- `src/components/import/ImportVocabStep.tsx` - Step 4: ekstrak kosakata
-- `src/components/import/ImportCompleteStep.tsx` - Step 5: selesai
-- `src/hooks/useImportMaterial.ts` - Hook untuk state management & API calls
+### Prioritas Tinggi
 
-**File yang akan diubah:**
-- `supabase/config.toml` - Tambah config function `import-material`
-- `src/App.tsx` - Tambah route `/materials/import`
-- `src/components/layout/AppSidebar.tsx` - Tambah menu "Import Materi"
-- `src/pages/Materials.tsx` - Tambah tombol "Import dari File"
-- Database migration untuk tabel `import_history` dan kolom `source_import_id`
+#### A. Sistem Progress / Halaman "/progress" (Missing Route)
+Sidebar menampilkan menu "Progress" dengan ikon `BarChart3` yang menuju `/progress`, tapi halaman tersebut **belum ada** — mengakibatkan 404. Ini harus segera dibuat.
 
-**Batasan file upload:**
-- Teks dari file dibaca client-side (FileReader API)
-- Untuk PDF, user disarankan copy-paste teks karena parsing PDF di browser terbatas
-- Maksimal ~50.000 karakter per analisis (limit AI context)
+Konten yang perlu ada:
+- Grafik SRS heatmap (kartu per hari, mirip GitHub contributions)
+- Grafik akurasi review flashcard dari waktu ke waktu
+- Breakdown kosakata per level JLPT
+- Statistik streak belajar harian
 
-**Hak cipta:**
-- Default mode: simpan ringkasan/catatan belajar saja (bukan konten penuh)
-- Toggle eksplisit dengan disclaimer jika user ingin simpan konten penuh
-- Konten disimpan di akun user pribadi, tidak dipublikasikan
+#### B. Fitur Kuis Kana (di halaman /kana)
+Halaman tabel kana sudah bagus tapi bersifat pasif. Tambahkan tab "Kuis" yang:
+- Menampilkan karakter kana acak (Hiragana atau Katakana)
+- User harus mengetik romaji yang benar
+- Ada skor, timer, dan feedback visual
 
+#### C. Streak Belajar Harian
+Tidak ada sistem streak saat ini. Tambahkan:
+- Pelacakan hari berturut-turut user belajar
+- Tampilkan streak di WelcomeSection (misal: 🔥 7 hari berturut-turut)
+- Notifikasi jika streak hampir putus
+
+### Prioritas Menengah
+
+#### D. Audio TTS di Kosakata & Flashcard
+Banyak kartu tidak memiliki `audio_url`. Bisa menggunakan **Web Speech API** (`speechSynthesis`) untuk TTS Japanese secara gratis tanpa API key, dan tombolnya sudah ada di `FlashcardCard.tsx`.
+
+#### E. Filter Tag di Halaman Kosakata
+Saat ini hanya ada filter Level dan Sort. Menambahkan filter berdasarkan tag (yang sudah ada di database) akan memudahkan user mengelola kosakata berdasarkan topik/materi.
+
+#### F. Import CSV Kosakata
+Halaman sudah punya Export CSV, tapi belum ada Import CSV. Ini berguna untuk user yang ingin memindahkan kosakata dari Anki atau Quizlet.
+
+### Prioritas Rendah
+
+#### G. Dark Mode yang Fungsional
+Setting tema sudah ada di Settings, tapi tidak benar-benar mengubah tema aplikasi karena tidak terhubung ke `next-themes` atau CSS variable toggling.
+
+#### H. Notifikasi di Browser (Push Notification)
+Setting notifikasi sudah ada di UI (`srs_reminders`, `email_reminders`) tapi tidak berfungsi karena tidak ada backend scheduler.
+
+---
+
+## Ringkasan Rencana Implementasi (jika disetujui)
+
+Saya rekomendasikan memulai dari yang paling berdampak:
+
+```text
+FASE 1 (Perbaikan Bug):
+├── Sambungkan badge SRS sidebar ke data real
+├── Tampilkan riwayat ujian nyata di halaman Exam
+└── Perbaiki XP harian
+
+FASE 2 (Fitur Missing):
+├── Buat halaman /progress yang hilang
+└── Tambah kuis interaktif di halaman /kana
+
+FASE 3 (Enhancement):
+├── TTS audio menggunakan Web Speech API
+├── Filter tag di kosakata
+└── Import CSV kosakata
+```
+
+Mana yang ingin kamu mulai kerjakan?
