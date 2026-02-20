@@ -35,11 +35,17 @@ const MaterialCard = ({ material, index }: { material: MaterialRow; index: numbe
   const duplicateMat = useDuplicateMaterial();
 
   const cfg = categoryConfig[material.category] ?? categoryConfig.grammar;
-  const contentPreview = material.content
-    ? typeof material.content === "string"
-      ? material.content
-      : extractTextFromTiptap(material.content)
-    : "";
+  const contentPreview = (() => {
+    if (!material.content) return "";
+    if (typeof material.content === "string") {
+      try {
+        return extractTextFromTiptap(JSON.parse(material.content));
+      } catch {
+        return material.content;
+      }
+    }
+    return extractTextFromTiptap(material.content);
+  })();
 
   return (
     <motion.div
