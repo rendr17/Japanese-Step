@@ -66,17 +66,62 @@ function jsonToHtml(json: any): string {
   }
 }
 
+const JP_PUNCT_MAP: Record<string, string> = {
+  "。": ". ", "、": ", ", "？": "? ", "！": "! ",
+  "…": "...", "「": '"', "」": '"', "『": "'", "』": "'",
+  "・": " ", "〜": "~", "：": ": ", "；": "; ",
+};
+
+function textToRomaji(text: string): string {
+  // Tokenize to separate hiragana/katakana chunks from punctuation and other chars
+  const tokens: Array<{ type: string; value: string }> = (wanakana as any).tokenize(text, { detailed: true }) ?? [];
+  const parts: string[] = [];
+
+  for (const token of tokens) {
+    const val: string = token.value ?? String(token);
+    const type: string = token.type ?? "";
+
+    if (type === "hiragana" || type === "katakana") {
+      parts.push(wanakana.toRomaji(val));
+    } else if (type === "ja_punctuation") {
+      let converted = "";
+      for (const ch of val) converted += JP_PUNCT_MAP[ch] ?? wanakana.toRomaji(ch);
+      // trim trailing space added above — the join will add one
+      parts.push(converted.trimEnd());
+    } else {
+      // kanji (shouldn't remain if ruby handled), romaji, or other — pass through
+      parts.push(val);
+    }
+  }
+
+  let result = parts.join(" ");
+  // Fix punctuation spacing: remove space before punctuation that follows a word
+  result = result.replace(/\s+([.,!?:;"])/g, "$1");
+  // Collapse multiple spaces
+  result = result.replace(/\s{2,}/g, " ").trim();
+  return result;
+}
+
 function htmlToRomaji(html: string): string {
   const parser = new DOMParser();
   const doc = parser.parseFromString(html, "text/html");
+
+  // Replace <ruby> elements: use the <rt> (furigana reading) text, discard kanji base
+  doc.querySelectorAll("ruby").forEach((ruby) => {
+    const rt = ruby.querySelector("rt");
+    const reading = rt?.textContent?.trim() ?? "";
+    // Replace entire ruby element with a text node of the reading
+    const textNode = doc.createTextNode(reading ? reading + " " : "");
+    ruby.replaceWith(textNode);
+  });
+
+  // Walk remaining text nodes and convert kana → romaji with proper spacing
   const walk = (node: Node) => {
     if (node.nodeType === Node.TEXT_NODE && node.textContent) {
-      node.textContent = wanakana.toRomaji(node.textContent);
+      node.textContent = textToRomaji(node.textContent);
     } else {
-      if ((node as Element).tagName === "RT" || (node as Element).tagName === "RP") {
-        node.textContent = "";
-        return;
-      }
+      const tag = (node as Element).tagName;
+      if (tag === "RT" || tag === "RP") { node.textContent = ""; return; }
       node.childNodes.forEach(walk);
     }
   };
