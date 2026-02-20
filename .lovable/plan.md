@@ -1,70 +1,76 @@
 
-# Perbaikan Import File Anki (.apkg) — WASM Loading Error
+## Root Cause
 
-## Masalah
+The problem is a **data quality issue** in the database. Many vocabulary entries in `vocab_bank` have their `meaning` column filled with kana readings instead of Indonesian translations. For example:
+- `日本語` → `meaning: にほんご` (should be: `Bahasa Jepang`)
+- `彼` → `meaning: かれ` (should be: `Dia (laki-laki)`)
+- `私` → `meaning: わたし` (should be: `Saya / Aku`)
 
-Saat user meng-upload file `.apkg`, aplikasi menggunakan library `sql.js` untuk membaca database SQLite di dalamnya. `sql.js` membutuhkan file WebAssembly (`.wasm`) yang diunduh secara terpisah.
+This means the UI code (`FlashcardCard.tsx`) is actually working correctly — it displays `card.meaning` as intended — but the data stored is wrong.
 
-Kode saat ini mengambil file WASM dari CDN eksternal `https://sql.js.org/dist/`:
+The fix has **two parts**:
 
-```ts
-// AnkiImportDialog.tsx — baris 70-72
-const SQL = await initSqlJs({
-  locateFile: (f: string) => `https://sql.js.org/dist/${f}`,
-});
+---
+
+## Part 1 — Fix the bad data in the database
+
+Use an AI-powered edge function (`vocab-ai-fill`) that already exists in the project to batch-update the `meaning` field for all vocab entries where `meaning` looks like Japanese (kana/kanji) instead of Indonesian.
+
+Query to identify and fix the entries:
+- Find all rows where `meaning` matches Japanese character patterns (hiragana/katakana)
+- Call the `vocab-ai-fill` edge function (which already exists) to generate correct Indonesian translations
+- Or write a one-time SQL update using a deterministic mapping for common words
+
+**Approach**: Since there are potentially many bad entries, we'll add a **"Perbaiki Arti"** (Fix Meaning) button in the UI that:
+1. Detects vocab entries whose `meaning` field contains only Japanese characters
+2. Calls the existing `vocab-ai-fill` edge function to auto-fill correct Indonesian translations in batch
+3. Shows a progress indicator while fixing
+
+---
+
+## Part 2 — Add a visual guard in FlashcardCard
+
+As a safety net, detect when `card.meaning` looks like Japanese text and show a warning/placeholder instead of displaying kana as "Arti". This prevents confusion while data is being fixed.
+
+---
+
+## Files to Change
+
+### 1. `src/components/flashcard/FlashcardCard.tsx`
+- Add a helper `isJapanese(text: string)` that returns `true` if the string contains only kana/kanji characters
+- If `card.meaning` is detected as Japanese, show a styled "—" with a note "Arti belum tersedia" instead
+
+### 2. `src/pages/Flashcards.tsx`
+- Add a "Perbaiki Data" button that triggers batch fix for vocab with bad meaning data
+- This button calls the `vocab-ai-fill` edge function for detected bad entries
+
+### 3. `src/pages/Vocabulary.tsx` (or a shared utility)
+- Add a bulk fix utility that finds all `vocab_bank` rows where `meaning` is Japanese, then sends them to the AI fill function
+
+---
+
+## Technical Details
+
+**Detection logic** (to identify bad meaning entries):
+```typescript
+const isJapaneseMeaning = (text: string) =>
+  /^[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FFF\s・ー]+$/.test(text.trim());
 ```
 
-CDN tersebut **gagal diakses** dari environment preview (HTTP 404/network error), sehingga WASM tidak bisa dimuat dan seluruh parsing `.apkg` gagal.
+**Batch fix flow**:
+1. Query all `vocab_bank` WHERE `meaning` matches Japanese pattern
+2. For each bad entry, call `vocab-ai-fill` edge function with `{ vocab_id, kanji, kana }`
+3. Edge function returns Indonesian translation and updates `meaning` in DB
 
-## Solusi
+**FlashcardCard guard** (immediate fix for display):
+```tsx
+const meaningDisplay = isJapaneseMeaning(card.meaning)
+  ? null  // show placeholder
+  : card.meaning;
 
-File WASM sudah tersedia secara lokal di `node_modules/sql.js/dist/sql-wasm.wasm`. Solusinya adalah:
-
-1. **Salin file WASM ke `public/`** — file di folder `public/` secara otomatis di-serve oleh Vite sebagai asset statis, bisa diakses di `https://yourapp.com/sql-wasm.wasm`
-
-2. **Ubah `locateFile`** di `AnkiImportDialog.tsx` agar menunjuk ke `/sql-wasm.wasm` (path lokal) bukan CDN eksternal
-
-3. **Tambah Vite config** untuk mengakomodasi WASM dengan benar (header MIME type dan optimizeDeps exclusion untuk sql.js)
-
-## Detail Teknis
-
-### File yang Diubah
-
-**1. `public/sql-wasm.wasm`** *(file baru — disalin dari node_modules)*
-- Disalin dari `node_modules/sql.js/dist/sql-wasm.wasm`
-- Langsung tersedia di `/sql-wasm.wasm` saat runtime, tanpa build step apapun
-
-**2. `src/components/flashcard/AnkiImportDialog.tsx`** *(ubah locateFile)*
-```ts
-// SEBELUM (gagal — CDN eksternal)
-const SQL = await initSqlJs({
-  locateFile: (f: string) => `https://sql.js.org/dist/${f}`,
-});
-
-// SESUDAH (berhasil — file lokal dari public/)
-const SQL = await initSqlJs({
-  locateFile: (f: string) => `/${f}`,
-});
+<p className="text-2xl font-semibold text-foreground">
+  {meaningDisplay || <span className="text-muted-foreground italic text-base">Arti belum tersedia</span>}
+</p>
 ```
 
-**3. `vite.config.ts`** *(exclude sql.js dari optimizeDeps)*
-- Tambahkan `sql.js` ke daftar `optimizeDeps.exclude` supaya Vite tidak mencoba men-transform WASM loader bawaan sql.js yang menyebabkan file WASM dicari di lokasi yang salah saat bundle.
-
-### Mengapa Ini Berhasil
-
-```text
-SEBELUM:
-Browser → fetch https://sql.js.org/dist/sql-wasm.wasm → ❌ HTTP Error / CORS
-            ↓ fallback sync fetch → ❌ juga gagal
-            ↓ Error: "both async and sync fetching of the wasm failed"
-
-SESUDAH:
-Browser → fetch /sql-wasm.wasm (dari public/) → ✅ 200 OK
-            ↓ WASM loaded → sql.js Database terbentuk
-            ↓ Parse .apkg berhasil → kartu ditampilkan
-```
-
-### Tidak Ada Ketergantungan Eksternal Baru
-- Tidak butuh API key, CDN, atau library tambahan
-- WASM file diambil dari package `sql.js` yang sudah terinstall (versi 1.14.0)
-- Perubahan minimal, hanya memperbaiki path pengambilan WASM
+This two-pronged approach fixes both the **display** (immediate) and the **underlying data** (permanent fix via AI).
