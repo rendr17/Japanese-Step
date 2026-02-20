@@ -90,13 +90,18 @@ const FlashcardCard = ({ card, isFlipped, onFlip, showFurigana }: FlashcardCardP
           className="zen-card min-h-[320px] flex flex-col items-center justify-center gap-5 p-8 absolute inset-0"
           style={{ backfaceVisibility: "hidden", transform: "rotateY(180deg)" }}
         >
-          <p className="text-3xl font-semibold text-foreground text-center">{card.meaning}</p>
-
           <div className="text-center space-y-1">
-            <p className="text-2xl font-jp text-muted-foreground">
+            <p className="text-2xl font-jp text-foreground font-medium">
               {card.kanji || card.kana}
             </p>
-            <p className="text-lg font-jp text-muted-foreground">{card.kana}</p>
+            {card.kanji && (
+              <p className="text-base font-jp text-muted-foreground">{card.kana}</p>
+            )}
+          </div>
+
+          <div className="w-full max-w-sm border-t border-border pt-4 text-center">
+            <p className="text-xs text-muted-foreground uppercase tracking-widest mb-1">Arti</p>
+            <p className="text-2xl font-semibold text-foreground">{card.meaning || "—"}</p>
           </div>
 
           {card.example_sentence && (
