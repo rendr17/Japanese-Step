@@ -66,9 +66,9 @@ async function parseApkgFile(file: File): Promise<ParsedCard[]> {
     throw new Error("File .apkg tidak valid: database Anki tidak ditemukan");
   }
 
-  // Initialize sql.js with CDN WASM
+  // Initialize sql.js with local WASM (served from public/)
   const SQL = await initSqlJs({
-    locateFile: (f: string) => `https://sql.js.org/dist/${f}`,
+    locateFile: (_f: string) => `/sql-wasm.wasm`,
   });
 
   const db = new SQL.Database(dbFile);
