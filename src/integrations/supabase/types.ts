@@ -73,6 +73,33 @@ export type Database = {
           },
         ]
       }
+      daily_xp_logs: {
+        Row: {
+          activity_type: string
+          created_at: string
+          date: string
+          id: string
+          user_id: string
+          xp_earned: number
+        }
+        Insert: {
+          activity_type?: string
+          created_at?: string
+          date?: string
+          id?: string
+          user_id: string
+          xp_earned?: number
+        }
+        Update: {
+          activity_type?: string
+          created_at?: string
+          date?: string
+          id?: string
+          user_id?: string
+          xp_earned?: number
+        }
+        Relationships: []
+      }
       exam_questions: {
         Row: {
           audio_prompt: string | null
@@ -280,6 +307,7 @@ export type Database = {
           avatar_url: string | null
           created_at: string
           current_path: Database["public"]["Enums"]["learning_path"]
+          current_streak: number
           daily_goal_xp: number
           default_jlpt_level: string | null
           display_name: string | null
@@ -287,6 +315,8 @@ export type Database = {
           font_size: string | null
           furigana_display: string | null
           id: string
+          last_activity_date: string | null
+          longest_streak: number
           reduce_motion: boolean | null
           srs_reminders: boolean | null
           study_reminder_time: string | null
@@ -303,6 +333,7 @@ export type Database = {
           avatar_url?: string | null
           created_at?: string
           current_path?: Database["public"]["Enums"]["learning_path"]
+          current_streak?: number
           daily_goal_xp?: number
           default_jlpt_level?: string | null
           display_name?: string | null
@@ -310,6 +341,8 @@ export type Database = {
           font_size?: string | null
           furigana_display?: string | null
           id: string
+          last_activity_date?: string | null
+          longest_streak?: number
           reduce_motion?: boolean | null
           srs_reminders?: boolean | null
           study_reminder_time?: string | null
@@ -326,6 +359,7 @@ export type Database = {
           avatar_url?: string | null
           created_at?: string
           current_path?: Database["public"]["Enums"]["learning_path"]
+          current_streak?: number
           daily_goal_xp?: number
           default_jlpt_level?: string | null
           display_name?: string | null
@@ -333,6 +367,8 @@ export type Database = {
           font_size?: string | null
           furigana_display?: string | null
           id?: string
+          last_activity_date?: string | null
+          longest_streak?: number
           reduce_motion?: boolean | null
           srs_reminders?: boolean | null
           study_reminder_time?: string | null
@@ -393,6 +429,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      study_sessions: {
+        Row: {
+          activity_type: string
+          created_at: string
+          duration_seconds: number
+          ended_at: string | null
+          id: string
+          started_at: string
+          user_id: string
+          xp_earned: number
+        }
+        Insert: {
+          activity_type: string
+          created_at?: string
+          duration_seconds?: number
+          ended_at?: string | null
+          id?: string
+          started_at?: string
+          user_id: string
+          xp_earned?: number
+        }
+        Update: {
+          activity_type?: string
+          created_at?: string
+          duration_seconds?: number
+          ended_at?: string | null
+          id?: string
+          started_at?: string
+          user_id?: string
+          xp_earned?: number
+        }
+        Relationships: []
       }
       user_roles: {
         Row: {

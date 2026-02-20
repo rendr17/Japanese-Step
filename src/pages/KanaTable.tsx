@@ -1,6 +1,9 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { motion, AnimatePresence } from "framer-motion";
 
 // ── Base tables ──────────────────────────────────────────────────────────────
 
@@ -266,6 +269,215 @@ const NumbersTable = () => (
   </div>
 );
 
+// ── Quiz Component ─────────────────────────────────────────────────────────────
+
+// Build flat quiz pool from all kana
+const buildQuizPool = (type: "hiragana" | "katakana" | "both") => {
+  const pool: { kana: string; roma: string }[] = [];
+  
+  const addRows = (rows: { chars: string[] }[], romaji: string[][]) => {
+    rows.forEach((row, ri) => {
+      row.chars.forEach((kana, ci) => {
+        if (kana && romaji[ri]?.[ci]) pool.push({ kana, roma: romaji[ri][ci] });
+      });
+    });
+  };
+  const addDakuten = (groups: { chars: string[] }[], romaji: string[][]) => {
+    groups.forEach((g, gi) => {
+      g.chars.forEach((kana, ci) => {
+        if (kana && romaji[gi]?.[ci]) pool.push({ kana, roma: romaji[gi][ci] });
+      });
+    });
+  };
+  const addYouon = (groups: { chars: string[]; roma: string[] }[]) => {
+    groups.forEach((g) => {
+      g.chars.forEach((kana, ci) => {
+        if (kana && g.roma[ci]) pool.push({ kana, roma: g.roma[ci] });
+      });
+    });
+  };
+
+  if (type === "hiragana" || type === "both") {
+    addRows(hiraganaRows, baseRomaji);
+    addDakuten(dakutenHiragana, dakutenRomaji);
+    addYouon(youonHiragana);
+  }
+  if (type === "katakana" || type === "both") {
+    addRows(katakanaRows, baseRomaji);
+    addDakuten(dakutenKatakana, dakutenRomaji);
+    addYouon(youonKatakana);
+  }
+  return pool;
+};
+
+const KanaQuiz = () => {
+  const [quizType, setQuizType] = useState<"hiragana" | "katakana" | "both">("hiragana");
+  const [pool, setPool] = useState<{ kana: string; roma: string }[]>([]);
+  const [currentIdx, setCurrentIdx] = useState(0);
+  const [answer, setAnswer] = useState("");
+  const [feedback, setFeedback] = useState<"correct" | "wrong" | null>(null);
+  const [score, setScore] = useState(0);
+  const [total, setTotal] = useState(0);
+  const [started, setStarted] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(0);
+  const [streak, setStreak] = useState(0);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const startQuiz = () => {
+    const newPool = [...buildQuizPool(quizType)].sort(() => Math.random() - 0.5);
+    setPool(newPool);
+    setCurrentIdx(0);
+    setAnswer("");
+    setFeedback(null);
+    setScore(0);
+    setTotal(0);
+    setStreak(0);
+    setTimeLeft(60);
+    setStarted(true);
+    if (timerRef.current) clearInterval(timerRef.current);
+    timerRef.current = setInterval(() => {
+      setTimeLeft((t) => {
+        if (t <= 1) {
+          clearInterval(timerRef.current!);
+          setStarted(false);
+          return 0;
+        }
+        return t - 1;
+      });
+    }, 1000);
+    setTimeout(() => inputRef.current?.focus(), 100);
+  };
+
+  const current = pool[currentIdx % pool.length];
+
+  const checkAnswer = () => {
+    if (!current || !answer.trim()) return;
+    const correct = answer.trim().toLowerCase() === current.roma.toLowerCase();
+    setFeedback(correct ? "correct" : "wrong");
+    setTotal((t) => t + 1);
+    if (correct) { setScore((s) => s + 1); setStreak((s) => s + 1); }
+    else setStreak(0);
+
+    setTimeout(() => {
+      setFeedback(null);
+      setAnswer("");
+      setCurrentIdx((i) => i + 1);
+      inputRef.current?.focus();
+    }, 600);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") checkAnswer();
+  };
+
+  const accuracy = total > 0 ? Math.round((score / total) * 100) : 0;
+
+  if (!started) {
+    return (
+      <div className="space-y-6">
+        <div className="zen-card p-6 max-w-sm mx-auto text-center space-y-4">
+          <div className="text-4xl">🎌</div>
+          <h3 className="text-lg font-serif font-semibold text-foreground">Kuis Kana</h3>
+          <p className="text-sm text-muted-foreground">Ketik romaji untuk karakter kana yang tampil. Kamu punya 60 detik!</p>
+          
+          <div className="flex gap-2 justify-center flex-wrap">
+            {(["hiragana", "katakana", "both"] as const).map((t) => (
+              <button
+                key={t}
+                onClick={() => setQuizType(t)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${quizType === t ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}
+              >
+                {t === "hiragana" ? "ひらがな" : t === "katakana" ? "カタカナ" : "両方"}
+              </button>
+            ))}
+          </div>
+
+          {total > 0 && (
+            <div className="text-sm text-muted-foreground bg-muted/50 rounded-lg p-3">
+              <p>Hasil terakhir: <span className="font-bold text-foreground">{score}/{total}</span> benar ({accuracy}%)</p>
+              {streak > 0 && <p className="text-xs mt-1">🔥 Streak terbaik: {streak}</p>}
+            </div>
+          )}
+
+          <Button onClick={startQuiz} className="w-full">Mulai Kuis!</Button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-sm mx-auto space-y-5">
+      {/* Timer & score bar */}
+      <div className="flex items-center justify-between">
+        <div className="text-sm font-medium text-foreground">
+          ✅ {score} / {total} benar
+        </div>
+        <div className={`text-sm font-bold ${timeLeft <= 10 ? "text-destructive animate-pulse" : "text-muted-foreground"}`}>
+          ⏱ {timeLeft}s
+        </div>
+        {streak >= 3 && (
+          <div className="text-sm text-accent font-bold">🔥 {streak}x streak!</div>
+        )}
+      </div>
+
+      {/* Progress bar */}
+      <div className="w-full h-1.5 rounded-full bg-muted">
+        <div
+          className={`h-full rounded-full transition-all ${timeLeft <= 10 ? "bg-destructive" : "bg-primary"}`}
+          style={{ width: `${(timeLeft / 60) * 100}%` }}
+        />
+      </div>
+
+      {/* Question card */}
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={currentIdx}
+          initial={{ opacity: 0, y: 20, scale: 0.95 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: -20, scale: 0.95 }}
+          transition={{ duration: 0.2 }}
+          className={`zen-card p-8 flex flex-col items-center gap-4 transition-colors ${
+            feedback === "correct" ? "border-secondary bg-secondary/10" :
+            feedback === "wrong" ? "border-destructive bg-destructive/10" : ""
+          }`}
+        >
+          <p className="text-7xl font-bold text-foreground" style={{ fontFamily: "'Noto Sans JP', sans-serif" }}>
+            {current?.kana}
+          </p>
+          {feedback && (
+            <p className={`text-sm font-bold ${feedback === "correct" ? "text-secondary" : "text-destructive"}`}>
+              {feedback === "correct" ? "✓ Benar!" : `✗ Salah! Jawaban: ${current?.roma}`}
+            </p>
+          )}
+        </motion.div>
+      </AnimatePresence>
+
+      {/* Input */}
+      <div className="flex gap-2">
+        <Input
+          ref={inputRef}
+          value={answer}
+          onChange={(e) => setAnswer(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder="Ketik romaji..."
+          className="text-center text-lg h-12"
+          disabled={!!feedback}
+          autoComplete="off"
+          autoCorrect="off"
+        />
+        <Button onClick={checkAnswer} disabled={!!feedback || !answer.trim()} className="h-12 px-4">
+          OK
+        </Button>
+      </div>
+
+      <Button variant="outline" size="sm" className="w-full" onClick={() => { clearInterval(timerRef.current!); setStarted(false); }}>
+        Selesai
+      </Button>
+    </div>
+  );
+};
+
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 const KanaTable = () => (
@@ -288,6 +500,9 @@ const KanaTable = () => (
         </TabsTrigger>
         <TabsTrigger value="numbers">
           １２３ <Badge variant="outline" className="ml-1.5 text-[10px]">Angka</Badge>
+        </TabsTrigger>
+        <TabsTrigger value="quiz">
+          🎯 <Badge variant="outline" className="ml-1.5 text-[10px]">Kuis</Badge>
         </TabsTrigger>
       </TabsList>
 
@@ -337,6 +552,11 @@ const KanaTable = () => (
           <NumbersTable />
         </div>
       </TabsContent>
+
+      {/* Quiz */}
+      <TabsContent value="quiz">
+        <KanaQuiz />
+      </TabsContent>
     </Tabs>
 
     <p className="text-xs text-muted-foreground pt-2">💡 Tip: Klik setiap karakter kana untuk toggle tampilan romaji / kana</p>
@@ -344,3 +564,4 @@ const KanaTable = () => (
 );
 
 export default KanaTable;
+

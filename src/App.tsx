@@ -28,6 +28,7 @@ import MaterialImport from "./pages/MaterialImport";
 import SettingsPage from "./pages/Settings";
 import Flashcards from "./pages/Flashcards";
 import KanaTable from "./pages/KanaTable";
+import Progress from "./pages/Progress";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -65,6 +66,7 @@ const App = () => (
                 <Route path="/settings" element={<SettingsPage />} />
                 <Route path="/flashcards" element={<Flashcards />} />
                 <Route path="/kana" element={<KanaTable />} />
+                <Route path="/progress" element={<Progress />} />
               </Route>
             </Route>
 
