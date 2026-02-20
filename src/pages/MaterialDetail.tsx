@@ -1,10 +1,11 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
-  ArrowLeft, Pencil, Star, Share2, Trash2, Eye, EyeOff,
+  ArrowLeft, Pencil, Star, Share2, Trash2,
   Minus, Plus, Clock, BookOpen, FileText, MessageCircle, Languages,
 } from "lucide-react";
+import * as wanakana from "wanakana";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -58,7 +59,6 @@ function jsonToHtml(json: any): string {
   if (!json) return "";
   try {
     let html = generateHTML(json, extensions);
-    // The content may contain literal <ruby> tags stored as text - unescape them
     html = html.replace(/&lt;ruby&gt;/g, "<ruby>").replace(/&lt;\/ruby&gt;/g, "</ruby>")
       .replace(/&lt;rt&gt;/g, "<rt>").replace(/&lt;\/rt&gt;/g, "</rt>")
       .replace(/&lt;rp&gt;/g, "<rp>").replace(/&lt;\/rp&gt;/g, "</rp>");
@@ -66,6 +66,28 @@ function jsonToHtml(json: any): string {
   } catch {
     return typeof json === "string" ? json : "<p>Konten tidak dapat ditampilkan.</p>";
   }
+}
+
+/** Convert kana in text nodes of an HTML string to romaji */
+function htmlToRomaji(html: string): string {
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(html, "text/html");
+
+  const walk = (node: Node) => {
+    if (node.nodeType === Node.TEXT_NODE && node.textContent) {
+      node.textContent = wanakana.toRomaji(node.textContent);
+    } else {
+      // Skip <rt> tags when romaji mode is on (reading already converted)
+      if ((node as Element).tagName === "RT") {
+        node.textContent = "";
+        return;
+      }
+      node.childNodes.forEach(walk);
+    }
+  };
+
+  doc.body.childNodes.forEach(walk);
+  return doc.body.innerHTML;
 }
 
 // ---------- Selection Toolbar ----------
@@ -124,6 +146,7 @@ const MaterialDetail = () => {
   const deleteMat = useDeleteMaterial();
 
   const [showFurigana, setShowFurigana] = useState(true);
+  const [showRomaji, setShowRomaji] = useState(false);
   const [fontSize, setFontSize] = useState(18);
   const [readProgress, setReadProgress] = useState(0);
   const [selToolbar, setSelToolbar] = useState<{ x: number; y: number } | null>(null);
@@ -158,6 +181,13 @@ const MaterialDetail = () => {
     setSelToolbar({ x: rect.left + rect.width / 2 - 100, y: rect.top - 44 });
   }, []);
 
+  // Derive HTML — must be before early returns to keep hook order stable
+  const rawHtml = useMemo(() => jsonToHtml(material?.content), [material?.content]);
+  const html = useMemo(
+    () => showRomaji ? htmlToRomaji(rawHtml) : rawHtml,
+    [rawHtml, showRomaji]
+  );
+
   if (isLoading) {
     return (
       <div className="max-w-[720px] mx-auto py-8 px-4 space-y-6">
@@ -177,7 +207,6 @@ const MaterialDetail = () => {
     );
   }
 
-  const html = jsonToHtml(material.content);
   const plainText = jsonToPlainText(material.content);
   const readingTime = estimateReadingTime(plainText);
   const cfg = categoryConfig[material.category] ?? categoryConfig.grammar;
@@ -276,10 +305,21 @@ const MaterialDetail = () => {
         </div>
 
         {/* Reading controls */}
-        <div className="flex items-center justify-end gap-4 mb-6">
+        <div className="flex items-center justify-end gap-4 mb-6 flex-wrap">
           <div className="flex items-center gap-2">
             <span className="text-xs text-muted-foreground">ふりがな</span>
-            <Switch checked={showFurigana} onCheckedChange={setShowFurigana} />
+            <Switch
+              checked={showFurigana}
+              onCheckedChange={(v) => { setShowFurigana(v); if (v) setShowRomaji(false); }}
+              disabled={showRomaji}
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground">ローマ字</span>
+            <Switch
+              checked={showRomaji}
+              onCheckedChange={(v) => { setShowRomaji(v); if (v) setShowFurigana(false); }}
+            />
           </div>
           <div className="flex items-center gap-1">
             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setFontSize((s) => Math.max(14, s - 2))}>
@@ -299,7 +339,7 @@ const MaterialDetail = () => {
           className="prose prose-sm max-w-none font-jp leading-[1.8]"
           style={{ fontSize: `${fontSize}px` }}
         >
-          <style>{!showFurigana ? `rt { display: none; }` : ""}</style>
+          <style>{(!showFurigana && !showRomaji) ? `rt { display: none; }` : showRomaji ? `ruby { display: contents; } rt, rp { display: none; }` : ""}</style>
           <div dangerouslySetInnerHTML={{ __html: html }} />
 
           {/* Supplementary: Vocabulary, Grammar, Cultural Note */}
