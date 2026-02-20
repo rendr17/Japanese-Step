@@ -17,6 +17,7 @@ import {
   ChevronLeft,
   Menu,
   X,
+  Grid3x3,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -33,6 +34,7 @@ const navItems = [
   { icon: Sparkles, label: "Generator Materi", path: "/ai-tools/generate" },
   { icon: Bot, label: "Sensei AI", path: "/ai-assistant" },
   { icon: Layers, label: "Flashcards (SRS)", path: "/flashcards", badge: 3 },
+  { icon: Grid3x3, label: "Tabel Kana", path: "/kana" },
   { icon: BarChart3, label: "Progress", path: "/progress" },
   { icon: ClipboardCheck, label: "Ujian Simulasi", path: "/exam" },
   { icon: Settings, label: "Settings", path: "/settings" },
