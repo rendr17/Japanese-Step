@@ -11,6 +11,16 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { useMaterials, useToggleFavorite, useDeleteMaterial, useDuplicateMaterial, type MaterialRow, type MaterialCategory } from "@/hooks/useMaterials";
 import { toast } from "sonner";
 
+function extractTextFromTiptap(node: unknown): string {
+  if (!node || typeof node !== "object") return "";
+  const n = node as { type?: string; text?: string; content?: unknown[] };
+  if (n.text) return n.text;
+  if (Array.isArray(n.content)) {
+    return n.content.map(extractTextFromTiptap).join(" ").replace(/\s+/g, " ").trim();
+  }
+  return "";
+}
+
 const categoryConfig: Record<string, { icon: React.ReactNode; label: string; color: string }> = {
   grammar: { icon: <FileText size={14} />, label: "Grammar", color: "bg-jlpt text-jlpt-foreground" },
   reading: { icon: <BookOpen size={14} />, label: "Reading", color: "bg-primary text-primary-foreground" },
@@ -28,7 +38,7 @@ const MaterialCard = ({ material, index }: { material: MaterialRow; index: numbe
   const contentPreview = material.content
     ? typeof material.content === "string"
       ? material.content
-      : JSON.stringify(material.content)
+      : extractTextFromTiptap(material.content)
     : "";
 
   return (
