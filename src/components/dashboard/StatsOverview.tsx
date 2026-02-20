@@ -1,6 +1,7 @@
 import { motion, animate } from "framer-motion";
 import { BookOpen, Award, Clock } from "lucide-react";
 import { useVocabStats } from "@/hooks/useDashboardData";
+import { useWeeklyStudyMinutes } from "@/hooks/useDailyXP";
 import { useEffect, useRef } from "react";
 
 const AnimatedCounter = ({ value, suffix = "" }: { value: number; suffix?: string }) => {
@@ -51,6 +52,7 @@ const StatItem = ({ icon, label, value, suffix, subtitle, delay }: StatItemProps
 
 const StatsOverview = () => {
   const { data: stats } = useVocabStats();
+  const { data: weeklyMinutes = 0 } = useWeeklyStudyMinutes();
 
   const items: StatItemProps[] = [
     {
@@ -72,7 +74,7 @@ const StatsOverview = () => {
     {
       icon: <Clock size={20} />,
       label: "Minggu Ini",
-      value: 0,
+      value: weeklyMinutes,
       suffix: " menit",
       subtitle: "waktu belajar",
       delay: 0.26,

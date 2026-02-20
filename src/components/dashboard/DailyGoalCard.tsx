@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useProfile } from "@/hooks/useDashboardData";
+import { useTodayXP } from "@/hooks/useDailyXP";
 import { useNavigate } from "react-router-dom";
 
 const CircularProgress = ({ value, max, size = 120 }: { value: number; max: number; size?: number }) => {
@@ -38,10 +39,10 @@ const CircularProgress = ({ value, max, size = 120 }: { value: number; max: numb
 
 const DailyGoalCard = () => {
   const { data: profile } = useProfile();
+  const { data: currentXP = 0 } = useTodayXP();
   const navigate = useNavigate();
   const dailyGoal = profile?.daily_goal_xp ?? 50;
-  // Simulated current XP — replace with real tracking later
-  const currentXP = 25;
+  const remaining = Math.max(0, dailyGoal - currentXP);
 
   return (
     <motion.div
@@ -53,7 +54,7 @@ const DailyGoalCard = () => {
       <h3 className="text-sm font-medium text-muted-foreground mb-4">Target Harian</h3>
       <CircularProgress value={currentXP} max={dailyGoal} />
       <p className="text-xs text-muted-foreground mt-3">
-        ~{Math.round((dailyGoal - currentXP) * 0.6)} menit lagi
+        {remaining > 0 ? `~${Math.round(remaining * 0.6)} menit lagi` : "🎉 Target hari ini tercapai!"}
       </p>
       <Button className="mt-4 gap-2" onClick={() => navigate("/materials")}>
         Lanjutkan Belajar

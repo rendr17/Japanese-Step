@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Plus, Search, Trash2, Pencil, Layers, Volume2, Download,
+  Plus, Search, Trash2, Pencil, Layers, Volume2, Download, Upload, Tag, X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,11 +15,21 @@ import {
 } from "@/components/ui/table";
 import { useIsMobile } from "@/hooks/use-mobile";
 import {
-  useVocabularySimple, useDeleteVocab, useBulkDeleteVocab, useAddToSrs, type VocabRow,
+  useVocabularySimple, useDeleteVocab, useBulkDeleteVocab, useAddToSrs, useAddVocab, type VocabRow,
 } from "@/hooks/useVocabulary";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import QuickAddVocab from "@/components/vocabulary/QuickAddVocab";
+
+// TTS helper
+const speakJapanese = (text: string) => {
+  if (!("speechSynthesis" in window) || !text) return;
+  window.speechSynthesis.cancel();
+  const utter = new SpeechSynthesisUtterance(text);
+  utter.lang = "ja-JP";
+  utter.rate = 0.9;
+  window.speechSynthesis.speak(utter);
+};
 
 // ── Main Page ──────────────────────────────────────────────────────
 const Vocabulary = () => {
@@ -282,11 +292,13 @@ const DesktopTable = ({
             </TableCell>
             <TableCell className="text-right">
               <div className="flex items-center justify-end gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                {v.audio_url && (
-                  <button className="p-1.5 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors" title="Play audio">
-                    <Volume2 size={14} />
-                  </button>
-                )}
+                <button
+                  className="p-1.5 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                  title="Ucapkan (TTS)"
+                  onClick={() => speakJapanese(v.kanji || v.kana)}
+                >
+                  <Volume2 size={14} />
+                </button>
                 <button onClick={() => onEdit(v)} className="p-1.5 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors" title="Edit">
                   <Pencil size={14} />
                 </button>
@@ -342,6 +354,9 @@ const MobileCards = ({
           </div>
         )}
         <div className="flex items-center gap-1 pt-2 border-t border-border/50">
+          <Button variant="ghost" size="sm" className="h-7 text-xs gap-1 text-muted-foreground" onClick={() => speakJapanese(v.kanji || v.kana)}>
+            <Volume2 size={12} /> Ucap
+          </Button>
           <Button variant="ghost" size="sm" className="h-7 text-xs gap-1 text-muted-foreground" onClick={() => onEdit(v)}>
             <Pencil size={12} /> Edit
           </Button>

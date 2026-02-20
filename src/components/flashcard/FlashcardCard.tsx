@@ -27,6 +27,16 @@ const FlashcardCard = ({ card, isFlipped, onFlip, showFurigana }: FlashcardCardP
     if (card.audio_url) {
       const audio = new Audio(card.audio_url);
       audio.play();
+    } else {
+      // TTS fallback using Web Speech API
+      const text = card.kanji || card.kana;
+      if ("speechSynthesis" in window && text) {
+        window.speechSynthesis.cancel();
+        const utter = new SpeechSynthesisUtterance(text);
+        utter.lang = "ja-JP";
+        utter.rate = 0.9;
+        window.speechSynthesis.speak(utter);
+      }
     }
   };
 
@@ -97,16 +107,14 @@ const FlashcardCard = ({ card, isFlipped, onFlip, showFurigana }: FlashcardCardP
             </div>
           )}
 
-          {card.audio_url && (
-            <Button
-              variant="outline"
-              size="sm"
-              className="gap-2"
-              onClick={(e) => { e.stopPropagation(); playAudio(); }}
-            >
-              <Volume2 size={16} /> Putar Audio
-            </Button>
-          )}
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-2"
+            onClick={(e) => { e.stopPropagation(); playAudio(); }}
+          >
+            <Volume2 size={16} /> {card.audio_url ? "Putar Audio" : "Ucapkan"}
+          </Button>
 
           <p className="text-sm text-muted-foreground">Pilih jawaban di bawah</p>
         </div>

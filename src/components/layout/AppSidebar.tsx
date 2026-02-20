@@ -24,6 +24,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
+import { useSrsDueCount } from "@/hooks/useSrsBadge";
 
 const navItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/" },
@@ -33,7 +34,7 @@ const navItems = [
   { icon: Languages, label: "Analisis Kalimat", path: "/ai-tools/analyzer" },
   { icon: Sparkles, label: "Generator Materi", path: "/ai-tools/generate" },
   { icon: Bot, label: "Sensei AI", path: "/ai-assistant" },
-  { icon: Layers, label: "Flashcards (SRS)", path: "/flashcards", badge: 3 },
+  { icon: Layers, label: "Flashcards (SRS)", path: "/flashcards", badge: true },
   { icon: Grid3x3, label: "Tabel Kana", path: "/kana" },
   { icon: BarChart3, label: "Progress", path: "/progress" },
   { icon: ClipboardCheck, label: "Ujian Simulasi", path: "/exam" },
@@ -50,6 +51,7 @@ const AppSidebar = ({ collapsed, onToggle }: AppSidebarProps) => {
   const location = useLocation();
   const isMobile = useIsMobile();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { data: srsDueCount = 0 } = useSrsDueCount();
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -101,16 +103,16 @@ const AppSidebar = ({ collapsed, onToggle }: AppSidebarProps) => {
               {(!collapsed || isMobile) && (
                 <>
                   <span className="flex-1 text-left">{item.label}</span>
-                  {item.badge && (
+                  {item.badge && srsDueCount > 0 && (
                     <Badge className="bg-srs text-srs-foreground text-[10px] px-1.5 py-0 h-5 min-w-5 flex items-center justify-center">
-                      {item.badge}
+                      {srsDueCount > 99 ? "99+" : srsDueCount}
                     </Badge>
                   )}
                 </>
               )}
-              {collapsed && !isMobile && item.badge && (
+              {collapsed && !isMobile && item.badge && srsDueCount > 0 && (
                 <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-srs text-srs-foreground text-[9px] flex items-center justify-center font-bold">
-                  {item.badge}
+                  {srsDueCount > 9 ? "9+" : srsDueCount}
                 </span>
               )}
             </button>
