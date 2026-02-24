@@ -1,7 +1,6 @@
 import { motion } from "framer-motion";
 import { BookOpen, MessageCircle, ArrowRight } from "lucide-react";
-import { useProfile } from "@/hooks/useDashboardData";
-import { Progress } from "@/components/ui/progress";
+import { useProfile, useLearningProgress } from "@/hooks/useDashboardData";
 
 const pathConfig = {
   jlpt_academic: {
@@ -26,10 +25,11 @@ const pathConfig = {
 
 const LearningPathIndicator = () => {
   const { data: profile } = useProfile();
+  const { data: progress } = useLearningProgress();
   const path = profile?.current_path ?? "jlpt_academic";
   const cfg = pathConfig[path];
-  // Placeholder progress — connect to real data later
-  const progressPct = 42;
+  const progressPct = progress?.progressPct ?? 0;
+  const levelLabel = (progress?.level ?? "n5").toUpperCase();
 
   return (
     <motion.div
@@ -45,28 +45,26 @@ const LearningPathIndicator = () => {
           </div>
           <div>
             <span className={cfg.badgeClass}>{cfg.label}</span>
-            <p className="text-xs text-muted-foreground mt-1">Jalur belajar aktif</p>
+            <p className="text-xs text-muted-foreground mt-1">Level aktif: {levelLabel}</p>
           </div>
         </div>
         <span className="text-2xl">{cfg.emoji}</span>
       </div>
 
-      {path === "jlpt_academic" && (
-        <div className="space-y-2">
-          <div className="flex justify-between text-xs text-muted-foreground">
-            <span>Progress ke level berikutnya</span>
-            <span>{progressPct}%</span>
-          </div>
-          <div className="h-2.5 rounded-full bg-muted overflow-hidden">
-            <motion.div
-              initial={{ width: 0 }}
-              animate={{ width: `${progressPct}%` }}
-              transition={{ duration: 1, ease: "easeOut", delay: 0.4 }}
-              className={`h-full rounded-full ${cfg.progressColor}`}
-            />
-          </div>
+      <div className="space-y-2">
+        <div className="flex justify-between text-xs text-muted-foreground">
+          <span>{progress?.mastered ?? 0} / {progress?.target ?? 800} kata dikuasai</span>
+          <span>{progressPct}%</span>
         </div>
-      )}
+        <div className="h-2.5 rounded-full bg-muted overflow-hidden">
+          <motion.div
+            initial={{ width: 0 }}
+            animate={{ width: `${progressPct}%` }}
+            transition={{ duration: 1, ease: "easeOut", delay: 0.4 }}
+            className={`h-full rounded-full ${cfg.progressColor}`}
+          />
+        </div>
+      </div>
     </motion.div>
   );
 };
