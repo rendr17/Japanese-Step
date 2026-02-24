@@ -20,6 +20,27 @@ interface Props {
 
 const ImportInputStep = ({ rawText, setRawText, settings, setSettings, onAnalyze, isAnalyzing }: Props) => {
   const [isParsing, setIsParsing] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) {
+      const fakeEvent = { target: { files: [file] } } as unknown as React.ChangeEvent<HTMLInputElement>;
+      handleFileUpload(fakeEvent);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
 
   const extractTextFromPdf = async (file: File): Promise<string> => {
     const pdfjsLib = await import("pdfjs-dist");
@@ -80,10 +101,19 @@ const ImportInputStep = ({ rawText, setRawText, settings, setSettings, onAnalyze
 
         <TabsContent value="upload">
           <Card className="p-6">
-            <div className="border-2 border-dashed border-border rounded-lg p-8 text-center hover:border-primary/40 transition-colors">
-              <FileText size={40} className="mx-auto mb-3 text-muted-foreground" />
-              <p className="text-sm text-muted-foreground mb-3">Upload file PDF atau TXT untuk import otomatis</p>
-              <p className="text-xs text-muted-foreground mb-4">PDF akan diekstrak teksnya secara otomatis (maks. 50 halaman)</p>
+            <div
+              onDrop={handleDrop}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
+                isDragging ? "border-primary bg-primary/5" : "border-border hover:border-primary/40"
+              }`}
+            >
+              <FileText size={40} className={`mx-auto mb-3 transition-colors ${isDragging ? "text-primary" : "text-muted-foreground"}`} />
+              <p className="text-sm text-muted-foreground mb-1">
+                {isDragging ? "Lepaskan file di sini..." : "Drag & drop file PDF atau TXT ke sini"}
+              </p>
+              <p className="text-xs text-muted-foreground mb-4">atau klik tombol di bawah (maks. 50 halaman untuk PDF)</p>
               <label className="cursor-pointer">
                 <input type="file" accept=".pdf,.txt,.text" onChange={handleFileUpload} className="hidden" />
                 <Button variant="outline" asChild disabled={isParsing}>
