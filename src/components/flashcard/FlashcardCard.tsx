@@ -65,7 +65,9 @@ const FlashcardCard = ({ card, isFlipped, onFlip, showFurigana }: FlashcardCardP
 
           <div className="text-center">
             <p className="font-jp text-7xl font-bold text-foreground leading-tight">
-              {card.kanji || card.kana}
+              {(furiganaVisible || showFurigana === "always") && card.kanji
+                ? card.kana
+                : (card.kanji || card.kana)}
             </p>
             {card.kanji && (
               <div
@@ -74,7 +76,12 @@ const FlashcardCard = ({ card, isFlipped, onFlip, showFurigana }: FlashcardCardP
                 onMouseLeave={() => showFurigana === "hover" && setFuriganaVisible(false)}
               >
                 {furiganaVisible || showFurigana === "always" ? (
-                  <p className="text-xl text-muted-foreground font-jp">{card.kana}</p>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setFuriganaVisible(false); }}
+                    className="text-sm text-muted-foreground flex items-center gap-1 mx-auto hover:text-foreground transition-colors"
+                  >
+                    <EyeOff size={14} /> Tampilkan kanji
+                  </button>
                 ) : (
                   <button
                     onClick={(e) => { e.stopPropagation(); setFuriganaVisible(true); }}
