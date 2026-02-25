@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Plus, Search, X, Star, MoreVertical, Copy, Trash2, Pencil, BookOpen, MessageCircle, FileText, Languages, SlidersHorizontal, FileUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -181,12 +181,13 @@ const EmptyState = () => (
 
 const Materials = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [category, setCategory] = useState<MaterialCategory | "all">("all");
   const [level, setLevel] = useState<"all" | "n5" | "n4" | "n3" | "n2" | "n1" | "none">("all");
   const [sort, setSort] = useState<"newest" | "oldest" | "az" | "favorites">("newest");
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState(searchParams.get("q") ?? "");
   const [activeTags, setActiveTags] = useState<string[]>([]);
-  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState(searchParams.get("q") ?? "");
 
   const loadMoreRef = useRef<HTMLDivElement>(null);
 
