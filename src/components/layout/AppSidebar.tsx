@@ -25,6 +25,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 import { useSrsDueCount } from "@/hooks/useSrsBadge";
+import { useProfile } from "@/hooks/useDashboardData";
 
 const navItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/" },
@@ -52,6 +53,8 @@ const AppSidebar = ({ collapsed, onToggle }: AppSidebarProps) => {
   const isMobile = useIsMobile();
   const [mobileOpen, setMobileOpen] = useState(false);
   const { data: srsDueCount = 0 } = useSrsDueCount();
+  const { data: profile } = useProfile();
+  const displayName = profile?.display_name || "Learner";
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -128,7 +131,7 @@ const AppSidebar = ({ collapsed, onToggle }: AppSidebarProps) => {
           </div>
           {(!collapsed || isMobile) && (
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-foreground truncate">Learner</p>
+              <p className="text-sm font-medium text-foreground truncate">{displayName}</p>
               <p className="text-xs text-muted-foreground">Free Plan</p>
             </div>
           )}
