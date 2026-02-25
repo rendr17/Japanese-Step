@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useLocation } from "react-router-dom";
+import { useState, useCallback } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Search, Target, Sun, Moon } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -65,7 +65,9 @@ const XPRing = ({ current, goal, size = 36 }: XPRingProps) => {
 };
 
 const TopBar = () => {
+  const navigate = useNavigate();
   const location = useLocation();
+  const [searchQuery, setSearchQuery] = useState("");
   const [focusMode, setFocusMode] = useState(false);
   const [darkMode, setDarkMode] = useState(() => document.documentElement.classList.contains("dark"));
 
@@ -104,6 +106,14 @@ const TopBar = () => {
         <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
         <Input
           placeholder="Search..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && searchQuery.trim()) {
+              navigate(`/materials?q=${encodeURIComponent(searchQuery.trim())}`);
+              setSearchQuery("");
+            }
+          }}
           className="h-8 pl-8 text-xs bg-muted/50 border-transparent focus-visible:border-border"
         />
       </div>
