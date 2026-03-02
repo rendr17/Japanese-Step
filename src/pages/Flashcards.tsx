@@ -28,6 +28,7 @@ const Flashcards = () => {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [isFixing, setIsFixing] = useState(false);
   const [fixProgress, setFixProgress] = useState({ done: 0, total: 0 });
+  const [isFixingKana, setIsFixingKana] = useState(false);
   const [activeTab, setActiveTab] = useState<"review" | "decks">("review");
   const [studyingDeck, setStudyingDeck] = useState<string | null>(null);
 
@@ -75,6 +76,32 @@ const Flashcards = () => {
       toast.error("Gagal memperbaiki data");
     } finally {
       setIsFixing(false);
+    }
+  }, []);
+
+  const handleFixBadKana = useCallback(async () => {
+    setIsFixingKana(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) { toast.error("Silakan login terlebih dahulu"); return; }
+
+      toast.info("Memperbaiki kana yang salah...");
+      const { data, error } = await supabase.functions.invoke("fix-vocab-kana", {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+
+      if (error) throw error;
+
+      if (data.fixed === 0 && data.total === 0) {
+        toast.success("Semua kana sudah benar! ✓");
+      } else {
+        toast.success(`${data.fixed} dari ${data.total} kana berhasil diperbaiki!`);
+        window.location.reload();
+      }
+    } catch (e) {
+      toast.error("Gagal memperbaiki kana");
+    } finally {
+      setIsFixingKana(false);
     }
   }, []);
 
@@ -209,6 +236,17 @@ const Flashcards = () => {
       >
         <h1 className="text-2xl font-serif font-bold text-foreground">Flashcard</h1>
         <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-1.5 text-xs"
+            onClick={handleFixBadKana}
+            disabled={isFixingKana}
+            title="Perbaiki kana yang masih berisi kanji"
+          >
+            <Wrench size={14} />
+            {isFixingKana ? "Memperbaiki Kana..." : "Perbaiki Kana"}
+          </Button>
           <Button
             variant="outline"
             size="sm"
