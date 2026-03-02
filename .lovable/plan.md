@@ -1,36 +1,42 @@
 
 
-## Perbaikan Progress Learning Path dari Hardcoded 42% ke Data Nyata
+## Analisis Masalah
 
-### Masalah
-Baris 32 di `LearningPathIndicator.tsx` menggunakan nilai tetap `const progressPct = 42` yang tidak terhubung ke data apapun.
+Masalah bukan di kode UI, melainkan di **data database**. Banyak entri di tabel `vocab_bank` memiliki kolom `kana` yang isinya sama dengan `kanji` (bukan kana sebenarnya).
 
-### Solusi
-Menghitung progress berdasarkan jumlah kosakata yang sudah dikuasai (mastered via SRS) dibandingkan target kosakata per level JLPT pengguna.
+Contoh:
+- 彼 → kana: `彼` (seharusnya `かれ`)
+- 私 → kana: `私` (seharusnya `わたし`)
+- 使う → kana: `使う` (seharusnya `つかう`)
 
-**Target kosakata per level:**
-| Level | Target |
-|-------|--------|
-| N5    | 800    |
-| N4    | 1.500  |
-| N3    | 3.750  |
-| N2    | 6.000  |
-| N1    | 10.000 |
+Ditemukan banyak baris seperti ini. Tombol "Tampilkan kana" sudah menampilkan `card.kana`, tapi isi `kana` di database salah.
 
-**Rumus:** `progress = Math.min(100, Math.round((mastered / target) * 100))`
+## Solusi
+
+### 1. Edge Function: Bulk Fix Kana
+Membuat edge function `fix-vocab-kana` yang:
+- Mengambil semua vocab di mana `kana = kanji` atau kana mengandung karakter kanji
+- Menggunakan AI (Gemini Flash) untuk menghasilkan reading kana yang benar
+- Memperbarui kolom `kana` di database
+
+### 2. UI: Tombol "Perbaiki Kana" di Halaman Flashcards
+- Menambahkan tombol di halaman Flashcards untuk menjalankan proses perbaikan kana secara batch
+- Menampilkan progress dan jumlah yang diperbaiki
+
+### 3. Perbaikan Saat Import
+- Mengupdate logika import agar memvalidasi kolom kana — jika kana sama dengan kanji, tandai perlu diperbaiki
 
 ### Detail Teknis
 
-**File: `src/hooks/useDashboardData.ts`**
-- Menambahkan hook baru `useLearningProgress()` yang:
-  - Mengambil `default_jlpt_level` dari profil user
-  - Menghitung jumlah vocab mastered dari `srs_logs` (status = 'mastered')
-  - Menghitung jumlah total vocab di `vocab_bank`
-  - Mengembalikan `{ mastered, total, target, progressPct, level }`
+**File baru: `supabase/functions/fix-vocab-kana/index.ts`**
+- Query vocab_bank di mana kana mengandung karakter kanji (regex Unicode range \u4E00-\u9FFF)
+- Kirim batch ke Gemini Flash untuk mendapatkan reading kana yang benar
+- Update hasilnya ke database
 
-**File: `src/components/dashboard/LearningPathIndicator.tsx`**
-- Mengganti `const progressPct = 42` dengan data dari `useLearningProgress()`
-- Menampilkan label progress yang lebih informatif, misalnya: "142 / 800 kata dikuasai"
-- Menampilkan progress bar untuk kedua jalur (JLPT dan JFT), bukan hanya JLPT
-- Menampilkan level aktif user (misal "N4") di bawah label jalur
+**File: `src/pages/Flashcards.tsx`**
+- Tambahkan tombol "Perbaiki Kana Otomatis" yang memanggil edge function tersebut
+- Tampilkan toast dengan jumlah entri yang berhasil diperbaiki
+
+**File: `src/components/flashcard/FlashcardCard.tsx`**
+- Tambahkan deteksi: jika `card.kana` mengandung kanji (bukan kana murni), tampilkan pesan "Kana belum tersedia" sebagai fallback agar user tahu datanya perlu diperbaiki
 
