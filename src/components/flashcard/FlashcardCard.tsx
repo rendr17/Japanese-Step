@@ -16,9 +16,13 @@ interface FlashcardCardProps {
 const isJapaneseMeaning = (text: string) =>
   /^[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FFF\s・ーっ、。]+$/.test(text.trim());
 
+// Deteksi apakah kana mengandung kanji (data salah)
+const containsKanji = (text: string) => /[\u4E00-\u9FFF]/.test(text);
+
 const FlashcardCard = ({ card, isFlipped, onFlip, showFurigana }: FlashcardCardProps) => {
   const [furiganaVisible, setFuriganaVisible] = useState(showFurigana === "always");
   const meaningIsJapanese = isJapaneseMeaning(card.meaning ?? "");
+  const kanaIsInvalid = card.kanji ? containsKanji(card.kana) : false;
 
   const levelColors: Record<string, string> = {
     n5: "bg-secondary text-secondary-foreground",
@@ -73,7 +77,11 @@ const FlashcardCard = ({ card, isFlipped, onFlip, showFurigana }: FlashcardCardP
                 onMouseEnter={() => showFurigana === "hover" && setFuriganaVisible(true)}
                 onMouseLeave={() => showFurigana === "hover" && setFuriganaVisible(false)}
               >
-                {furiganaVisible || showFurigana === "always" ? (
+                {kanaIsInvalid ? (
+                  <p className="text-sm italic text-muted-foreground">
+                    Kana belum tersedia — gunakan tombol "Perbaiki Kana" di atas
+                  </p>
+                ) : furiganaVisible || showFurigana === "always" ? (
                   <p className="text-xl text-muted-foreground font-jp">{card.kana}</p>
                 ) : (
                   <button
