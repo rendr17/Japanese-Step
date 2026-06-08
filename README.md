@@ -1,73 +1,82 @@
-# Welcome to your Lovable project
+# Japanese Step
 
-## Project info
+Platform belajar bahasa Jepang dengan materi interaktif, latihan ujian, dan bantuan AI.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+**Repository:** [github.com/rendr17/Japanese-Step](https://github.com/rendr17/Japanese-Step)
 
-## How can I edit this code?
+## Fitur
 
-There are several ways of editing your application.
+- **Materi belajar** — baca, edit, dan impor materi pembelajaran
+- **Kosakata & flashcard** — SRS (spaced repetition) dengan tampilan kana
+- **Tabel kana** — referensi hiragana dan katakana
+- **Simulasi ujian** — JLPT dan JFT Basic
+- **AI tools** — asisten chat, analisis kalimat, generator materi
+- **Progress** — pelacakan tujuan harian dan statistik belajar
 
-**Use Lovable**
+## Tech stack
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+- [Vite](https://vitejs.dev/) + [React](https://react.dev/) + [TypeScript](https://www.typescriptlang.org/)
+- [Tailwind CSS](https://tailwindcss.com/) + [shadcn/ui](https://ui.shadcn.com/)
+- [Supabase](https://supabase.com/) — auth, database, dan edge functions
 
-Changes made via Lovable will be committed automatically to this repo.
+## Prasyarat
 
-**Use your preferred IDE**
+- Node.js 18+
+- npm
+- Proyek Supabase (URL dan anon key)
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
+## Setup lokal
 
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+git clone https://github.com/rendr17/Japanese-Step.git
+cd Japanese-Step
+npm install
+cp .env.example .env
+```
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+Isi `.env` dengan kredensial Supabase Anda, lalu jalankan:
 
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
+```sh
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+Aplikasi berjalan di `http://localhost:5173` (port default Vite).
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## Environment variables
 
-**Use GitHub Codespaces**
+Salin `.env.example` ke `.env` dan isi nilainya. File `.env` **tidak** di-commit ke repository.
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+| Variable | Deskripsi |
+| --- | --- |
+| `VITE_SUPABASE_URL` | URL proyek Supabase |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | Anon/public key Supabase |
+| `VITE_SUPABASE_PROJECT_ID` | ID proyek Supabase |
 
-## What technologies are used for this project?
+Edge functions di `supabase/functions/` membutuhkan secret server-side (`LOVABLE_API_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, dll.) yang dikonfigurasi di dashboard Supabase, bukan di `.env` frontend.
 
-This project is built with:
+## Scripts
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+| Command | Deskripsi |
+| --- | --- |
+| `npm run dev` | Development server |
+| `npm run build` | Production build |
+| `npm run preview` | Preview build production |
+| `npm run lint` | ESLint |
+| `npm run test` | Vitest (single run) |
 
-## How can I deploy this project?
+## Struktur proyek
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+```
+src/
+  pages/          # Halaman aplikasi
+  components/     # UI components
+  hooks/          # Custom React hooks
+  integrations/   # Supabase client
+supabase/
+  functions/      # Edge functions (AI, SRS, import, dll.)
+  migrations/     # Database migrations
+```
 
-## Can I connect a custom domain to my Lovable project?
+## Lisensi
 
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+Proyek privat — hak cipta pemilik repository.
