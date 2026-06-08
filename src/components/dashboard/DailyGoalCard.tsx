@@ -1,41 +1,9 @@
-import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
 import { useProfile } from "@/hooks/useDashboardData";
 import { useTodayXP } from "@/hooks/useDailyXP";
 import { useNavigate } from "react-router-dom";
-
-const CircularProgress = ({ value, max, size = 120 }: { value: number; max: number; size?: number }) => {
-  const pct = Math.min((value / max) * 100, 100);
-  const r = (size - 12) / 2;
-  const circumference = 2 * Math.PI * r;
-  const offset = circumference - (pct / 100) * circumference;
-
-  return (
-    <div className="relative" style={{ width: size, height: size }}>
-      <svg width={size} height={size} className="-rotate-90">
-        <circle cx={size / 2} cy={size / 2} r={r} stroke="hsl(var(--muted))" strokeWidth="10" fill="none" />
-        <motion.circle
-          cx={size / 2}
-          cy={size / 2}
-          r={r}
-          stroke="hsl(var(--primary))"
-          strokeWidth="10"
-          fill="none"
-          strokeLinecap="round"
-          initial={{ strokeDashoffset: circumference }}
-          animate={{ strokeDashoffset: offset }}
-          transition={{ duration: 1.2, ease: "easeOut", delay: 0.3 }}
-          strokeDasharray={circumference}
-        />
-      </svg>
-      <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className="text-2xl font-serif font-bold text-foreground">{value}</span>
-        <span className="text-xs text-muted-foreground">/ {max} XP</span>
-      </div>
-    </div>
-  );
-};
 
 const DailyGoalCard = () => {
   const { data: profile } = useProfile();
@@ -43,24 +11,24 @@ const DailyGoalCard = () => {
   const navigate = useNavigate();
   const dailyGoal = profile?.daily_goal_xp ?? 50;
   const remaining = Math.max(0, dailyGoal - currentXP);
+  const progressPct = Math.min((currentXP / dailyGoal) * 100, 100);
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3, ease: "easeOut", delay: 0.1 }}
-      className="zen-card flex flex-col items-center text-center"
-    >
-      <h3 className="text-sm font-medium text-muted-foreground mb-4">Target Harian</h3>
-      <CircularProgress value={currentXP} max={dailyGoal} />
-      <p className="text-xs text-muted-foreground mt-3">
-        {remaining > 0 ? `~${Math.round(remaining * 0.6)} menit lagi` : "🎉 Target hari ini tercapai!"}
+    <div className="nori-card flex flex-col">
+      <p className="nori-section-title mb-4">Target Harian</p>
+      <div className="flex items-end gap-2 mb-3">
+        <span className="text-4xl font-bold text-foreground">{currentXP}</span>
+        <span className="text-sm text-muted-foreground mb-1 normal-case tracking-normal">/ {dailyGoal} XP</span>
+      </div>
+      <Progress value={progressPct} className="mb-3" />
+      <p className="text-xs text-muted-foreground normal-case tracking-normal font-normal mb-4">
+        {remaining > 0 ? `~${Math.round(remaining * 0.6)} menit lagi` : "Target hari ini tercapai!"}
       </p>
-      <Button className="mt-4 gap-2" onClick={() => navigate("/materials")}>
+      <Button className="mt-auto gap-2 w-full" onClick={() => navigate("/materials")}>
         Lanjutkan Belajar
         <ArrowRight size={16} />
       </Button>
-    </motion.div>
+    </div>
   );
 };
 

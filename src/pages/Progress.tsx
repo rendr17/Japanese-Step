@@ -200,7 +200,7 @@ const ProgressPage = () => {
             key={s.label}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="zen-card"
+            className="nori-card"
           >
             <div className={`${s.color} mb-2`}>{s.icon}</div>
             <p className="text-xs text-muted-foreground">{s.label}</p>
@@ -213,7 +213,7 @@ const ProgressPage = () => {
 
       <div className="grid lg:grid-cols-2 gap-6">
         {/* Vocab by JLPT Level */}
-        <Card className="zen-card">
+        <Card className="nori-card">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-2">
               <BookOpen size={16} className="text-primary" />
@@ -242,7 +242,7 @@ const ProgressPage = () => {
         </Card>
 
         {/* SRS Status Breakdown */}
-        <Card className="zen-card">
+        <Card className="nori-card">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-2">
               <Layers size={16} className="text-srs" />
@@ -280,7 +280,7 @@ const ProgressPage = () => {
       </div>
 
       {/* Weekly study activity */}
-      <Card className="zen-card">
+      <Card className="nori-card">
         <CardHeader className="pb-2">
           <CardTitle className="text-sm flex items-center gap-2">
             <Calendar size={16} className="text-accent" />
@@ -306,7 +306,7 @@ const ProgressPage = () => {
 
       {/* Exam score progression */}
       {(data?.examProgression ?? []).length > 0 && (
-        <Card className="zen-card">
+        <Card className="nori-card">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-2">
               <TrendingUp size={16} className="text-primary" />
@@ -328,7 +328,7 @@ const ProgressPage = () => {
       )}
 
       {/* Streak info */}
-      <Card className="zen-card">
+      <Card className="nori-card">
         <CardHeader className="pb-2">
           <CardTitle className="text-sm flex items-center gap-2">
             <Flame size={16} className="text-destructive" />
@@ -338,14 +338,16 @@ const ProgressPage = () => {
         <CardContent>
           <div className="flex items-center gap-8">
             <div className="text-center">
-              <p className="text-4xl font-serif font-bold text-foreground">
-                🔥 {data?.currentStreak ?? 0}
+              <p className="text-4xl font-serif font-bold text-foreground flex items-center justify-center gap-2">
+                <Flame size={28} className="text-destructive" strokeWidth={1.75} />
+                {data?.currentStreak ?? 0}
               </p>
               <p className="text-xs text-muted-foreground mt-1">Streak saat ini</p>
             </div>
             <div className="text-center">
-              <p className="text-4xl font-serif font-bold text-foreground">
-                🏆 {data?.longestStreak ?? 0}
+              <p className="text-4xl font-serif font-bold text-foreground flex items-center justify-center gap-2">
+                <Trophy size={28} className="text-primary" strokeWidth={1.75} />
+                {data?.longestStreak ?? 0}
               </p>
               <p className="text-xs text-muted-foreground mt-1">Streak terpanjang</p>
             </div>
@@ -355,7 +357,7 @@ const ProgressPage = () => {
               </p>
               <Progress value={Math.min(((data?.currentStreak ?? 0) / 30) * 100, 100)} className="h-2" />
               <p className="text-xs text-muted-foreground mt-1">
-                {Math.max(0, 30 - (data?.currentStreak ?? 0))} hari lagi menuju milestone 🎯
+                {Math.max(0, 30 - (data?.currentStreak ?? 0))} hari lagi menuju milestone
               </p>
             </div>
           </div>

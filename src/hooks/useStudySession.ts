@@ -4,10 +4,12 @@ import { supabase } from "@/integrations/supabase/client";
 export function useStudySession() {
   const sessionIdRef = useRef<string | null>(null);
   const startTimeRef = useRef<Date | null>(null);
+  const activityTypeRef = useRef<string>("study");
 
   const startSession = useCallback(async (activityType: string) => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
+    activityTypeRef.current = activityType;
     startTimeRef.current = new Date();
     const { data } = await supabase
       .from("study_sessions" as any)
@@ -29,18 +31,6 @@ export function useStudySession() {
         xp_earned: xpEarned,
       })
       .eq("id", sessionIdRef.current);
-
-    // Update daily XP log
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user && xpEarned > 0) {
-      const today = new Date().toISOString().split("T")[0];
-      await supabase
-        .from("daily_xp_logs" as any)
-        .upsert(
-          { user_id: user.id, date: today, xp_earned: xpEarned, activity_type: "flashcard" },
-          { onConflict: "user_id,date", ignoreDuplicates: false }
-        );
-    }
 
     sessionIdRef.current = null;
     startTimeRef.current = null;

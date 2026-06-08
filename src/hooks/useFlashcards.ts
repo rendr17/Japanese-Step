@@ -61,24 +61,27 @@ export function useDueCards(maxCards: number = 20) {
 
       if (vocabError) throw vocabError;
 
-      const srsMap = new Map(srsData.map((s) => [s.vocab_id, s]));
+      const vocabMap = new Map((vocabData ?? []).map((v) => [v.id, v]));
 
-      return (vocabData ?? []).map((v) => {
-        const srs = srsMap.get(v.id);
-        return {
-          id: v.id,
-          vocab_id: v.id,
-          kanji: v.kanji,
-          kana: v.kana,
-          meaning: v.meaning,
-          example_sentence: v.example_sentence,
-          jlpt_level: v.jlpt_level,
-          audio_url: v.audio_url,
-          srs_interval: srs?.interval_days ?? 0,
-          srs_ease: srs?.ease_factor ?? 2.5,
-          srs_repetitions: srs?.repetitions ?? 0,
-        };
-      });
+      return srsData
+        .map((s) => {
+          const v = vocabMap.get(s.vocab_id);
+          if (!v) return null;
+          return {
+            id: v.id,
+            vocab_id: v.id,
+            kanji: v.kanji,
+            kana: v.kana,
+            meaning: v.meaning,
+            example_sentence: v.example_sentence,
+            jlpt_level: v.jlpt_level,
+            audio_url: v.audio_url,
+            srs_interval: s.interval_days ?? 0,
+            srs_ease: s.ease_factor ?? 2.5,
+            srs_repetitions: s.repetitions ?? 0,
+          };
+        })
+        .filter((card): card is FlashcardItem => card !== null);
     },
   });
 }

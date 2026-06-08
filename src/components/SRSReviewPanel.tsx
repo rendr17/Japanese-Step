@@ -1,95 +1,92 @@
-import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 import { AlertCircle, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useDueReviews } from "@/hooks/useDashboardData";
+import { formatJlptLevel } from "@/lib/levelLabels";
+import { cn } from "@/lib/utils";
 
-interface ReviewItem {
-  japanese: string;
-  reading: string;
-  meaning: string;
-  level: string;
-  due: string;
-}
-
-const reviewItems: ReviewItem[] = [
-  { japanese: "経験", reading: "けいけん", meaning: "experience", level: "N3", due: "Overdue" },
-  { japanese: "届ける", reading: "とどける", meaning: "to deliver", level: "N3", due: "Due now" },
-  { japanese: "予約", reading: "よやく", meaning: "reservation", level: "A2", due: "Due now" },
-  { japanese: "相談", reading: "そうだん", meaning: "consultation", level: "N3", due: "In 30 min" },
-  { japanese: "申し込む", reading: "もうしこむ", meaning: "to apply", level: "A2", due: "In 1 hour" },
-];
+const LevelBadge = ({ level }: { level: string | null | undefined }) => {
+  const { label, variant } = formatJlptLevel(level);
+  if (variant === "hidden") return null;
+  return (
+    <span className={cn("text-xs", variant === "jlpt" ? "jlpt-badge" : "jft-badge")}>
+      {label}
+    </span>
+  );
+};
 
 const SRSReviewPanel = () => {
-  const overdueCount = reviewItems.filter(
-    (r) => r.due === "Overdue" || r.due === "Due now"
-  ).length;
+  const navigate = useNavigate();
+  const { data: dueItems = [] } = useDueReviews();
+
+  const displayItems = dueItems.slice(0, 5).map((item: any) => {
+    const vocab = item.vocab_bank;
+    return {
+      japanese: vocab?.kanji || vocab?.kana || "?",
+      reading: vocab?.kana ?? "",
+      meaning: vocab?.meaning ?? "",
+      level: vocab?.jlpt_level,
+    };
+  });
+
+  const dueCount = displayItems.length;
+
+  if (displayItems.length === 0) {
+    return (
+      <div>
+        <p className="nori-jp-display text-2xl mb-1">復習</p>
+        <h2 className="nori-section-title mb-4">SRS Reviews</h2>
+        <div className="nori-card p-6 text-center text-sm text-muted-foreground normal-case tracking-normal font-normal">
+          Tidak ada review due. Bagus!
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3, ease: "easeOut", delay: 0.2 }}
-    >
+    <div>
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-serif font-semibold text-foreground">SRS Reviews</h2>
-        {overdueCount > 0 && (
-          <span className="srs-badge flex items-center gap-1 animate-pulse-soft">
+        <div>
+          <p className="nori-jp-display text-2xl mb-1">復習</p>
+          <h2 className="nori-section-title">SRS Reviews</h2>
+        </div>
+        {dueCount > 0 && (
+          <span className="srs-badge flex items-center gap-1">
             <AlertCircle size={12} />
-            {overdueCount} due
+            {dueCount} due
           </span>
         )}
       </div>
 
-      <div className="zen-card space-y-0 p-0 overflow-hidden">
-        {reviewItems.map((item, i) => {
-          const isOverdue = item.due === "Overdue";
-          const isDueNow = item.due === "Due now";
-
-          return (
-            <motion.div
-              key={item.japanese}
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.2, delay: 0.3 + i * 0.05 }}
-              className={`flex items-center justify-between p-4 border-b border-border last:border-b-0 hover:bg-muted/50 transition-colors duration-200 cursor-pointer ${
-                isOverdue ? "bg-srs/5" : ""
-              }`}
-            >
-              <div className="flex items-center gap-4">
-                <div className="text-center min-w-[60px]">
-                  <p className="text-xl font-jp font-medium text-foreground">{item.japanese}</p>
-                  <p className="text-xs text-muted-foreground font-jp">{item.reading}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-foreground">{item.meaning}</p>
-                  <span className="text-xs text-muted-foreground">{item.level}</span>
-                </div>
+      <div className="nori-card space-y-0 p-0 overflow-hidden">
+        {displayItems.map((item, i) => (
+          <div
+            key={`${item.japanese}-${i}`}
+            className="flex items-center justify-between p-4 border-b border-border bg-primary/5 hover:bg-primary/10 transition-colors"
+          >
+            <div className="flex items-center gap-4 min-w-0">
+              <div className="text-center min-w-[60px] shrink-0">
+                <p className="text-xl font-jp font-medium text-foreground">{item.japanese}</p>
+                <p className="text-xs text-muted-foreground font-jp">{item.reading}</p>
               </div>
-              <span
-                className={`text-xs font-medium ${
-                  isOverdue
-                    ? "text-srs"
-                    : isDueNow
-                    ? "text-accent"
-                    : "text-muted-foreground"
-                }`}
-              >
-                {item.due}
-              </span>
-            </motion.div>
-          );
-        })}
-      </div>
+              <div className="min-w-0">
+                <p className="text-sm text-foreground normal-case tracking-normal font-normal truncate">
+                  {item.meaning}
+                </p>
+                <LevelBadge level={item.level} />
+              </div>
+            </div>
+          </div>
+        ))}
 
-      <div className="mt-4 flex justify-center">
-        <Button
-          variant="default"
-          className="gap-2"
-        >
-          <RotateCcw size={16} />
-          Start Review Session
-        </Button>
+        <div className="p-4 border-t border-border">
+          <Button className="w-full gap-2" onClick={() => navigate("/flashcards")}>
+            <RotateCcw size={16} />
+            Start Review Session
+          </Button>
+        </div>
       </div>
-    </motion.div>
+    </div>
   );
 };
 

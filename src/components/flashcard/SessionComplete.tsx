@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Trophy, Flame, Zap, RotateCcw, Home } from "lucide-react";
+import { Trophy, Flame, Zap, RotateCcw, Home, PartyPopper } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import type { SessionStats } from "@/hooks/useFlashcards";
 
@@ -21,16 +21,16 @@ const SessionComplete = ({ stats, onRestart }: SessionCompleteProps) => {
       initial={{ opacity: 0, scale: 0.9 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.5, type: "spring" }}
-      className="zen-card max-w-md mx-auto p-8 text-center space-y-6"
+      className="nori-card max-w-md mx-auto p-8 text-center space-y-6"
     >
       {showConfetti && (
         <motion.div
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
           transition={{ delay: 0.3, type: "spring", stiffness: 200 }}
-          className="text-6xl"
+          className="flex justify-center"
         >
-          🎉
+          <PartyPopper className="text-primary" size={48} strokeWidth={1.75} />
         </motion.div>
       )}
 

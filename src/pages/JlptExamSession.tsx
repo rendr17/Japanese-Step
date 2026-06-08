@@ -17,6 +17,8 @@ import { useExamQuestions, ExamQuestion } from "@/hooks/useExamQuestions";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useStudySession } from "@/hooks/useStudySession";
+import { useAddXP } from "@/hooks/useDailyXP";
 
 const TOTAL_TIME = 90 * 60; // 90 minutes in seconds
 
@@ -31,6 +33,8 @@ const JlptExamSession = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const { data: questions, isLoading } = useExamQuestions(level || "n5");
+  const { startSession, endSession } = useStudySession();
+  const addXP = useAddXP();
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<number, AnswerState>>({});
@@ -39,8 +43,65 @@ const JlptExamSession = () => {
   const [showSubmitDialog, setShowSubmitDialog] = useState(false);
   const [showTimeWarning, setShowTimeWarning] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const timeWarningShown = useRef(false);
   const startTime = useRef(Date.now());
+  const handleSubmitRef = useRef<() => void>(() => {});
+
+  const handleSubmit = useCallback(async () => {
+    if (submitted || isSubmitting || !questions || !user) return;
+    setIsSubmitting(true);
+
+    const timeTaken = Math.round((Date.now() - startTime.current) / 1000);
+    let score = 0;
+    const answerData = questions.map((q, i) => {
+      const selected = answers[i]?.selected ?? null;
+      const correct = selected === q.correct_answer;
+      if (correct) score++;
+      return {
+        question_id: q.id,
+        selected,
+        correct_answer: q.correct_answer,
+        correct,
+        section: q.section,
+      };
+    });
+
+    const { data, error } = await supabase.from("exam_results").insert({
+      user_id: user.id,
+      exam_type: "jlpt",
+      level: level || "n5",
+      score,
+      total_questions: questions.length,
+      answers: answerData,
+      time_taken_seconds: timeTaken,
+    }).select().single();
+
+    if (error) {
+      toast({ title: "Error", description: "Gagal menyimpan hasil ujian", variant: "destructive" });
+      setIsSubmitting(false);
+      return;
+    }
+
+    const xp = Math.round((score / questions.length) * 50);
+    if (xp > 0) {
+      addXP.mutate({ xp, activityType: "exam" });
+    }
+    await endSession(xp);
+
+    setSubmitted(true);
+    navigate(`/exam/results/${data.id}`);
+  }, [submitted, isSubmitting, questions, answers, user, level, navigate, toast, addXP, endSession]);
+
+  useEffect(() => {
+    handleSubmitRef.current = () => { void handleSubmit(); };
+  }, [handleSubmit]);
+
+  useEffect(() => {
+    if (questions && questions.length > 0) {
+      startSession("exam_jlpt");
+    }
+  }, [questions, startSession]);
 
   // Timer
   useEffect(() => {
@@ -49,7 +110,7 @@ const JlptExamSession = () => {
       setTimeLeft((prev) => {
         if (prev <= 1) {
           clearInterval(interval);
-          handleSubmit();
+          handleSubmitRef.current();
           return 0;
         }
         if (prev === 600 && !timeWarningShown.current) {
@@ -93,46 +154,9 @@ const JlptExamSession = () => {
     }));
   }, [currentIndex]);
 
-  const handleSubmit = useCallback(async () => {
-    if (submitted || !questions || !user) return;
-    setSubmitted(true);
-
-    const timeTaken = Math.round((Date.now() - startTime.current) / 1000);
-    let score = 0;
-    const answerData = questions.map((q, i) => {
-      const selected = answers[i]?.selected ?? null;
-      const correct = selected === q.correct_answer;
-      if (correct) score++;
-      return {
-        question_id: q.id,
-        selected,
-        correct_answer: q.correct_answer,
-        correct,
-        section: q.section,
-      };
-    });
-
-    const { data, error } = await supabase.from("exam_results").insert({
-      user_id: user.id,
-      exam_type: "jlpt",
-      level: level || "n5",
-      score,
-      total_questions: questions.length,
-      answers: answerData,
-      time_taken_seconds: timeTaken,
-    }).select().single();
-
-    if (error) {
-      toast({ title: "Error", description: "Gagal menyimpan hasil ujian", variant: "destructive" });
-      return;
-    }
-
-    navigate(`/exam/results/${data.id}`);
-  }, [submitted, questions, answers, user, level, navigate, toast]);
-
   if (isLoading || !questions) {
     return (
-      <div className="fixed inset-0 z-50 bg-background flex items-center justify-center">
+      <div className="fixed inset-0 z-50 bg-canvas flex items-center justify-center p-4">
         <div className="text-center space-y-3">
           <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
           <p className="text-muted-foreground">Memuat soal...</p>
@@ -152,9 +176,9 @@ const JlptExamSession = () => {
   const currentSection = currentIndex < 20 ? "Vocabulary" : currentIndex < 40 ? "Grammar" : "Reading";
 
   return (
-    <div className="fixed inset-0 z-50 bg-background flex flex-col">
+    <div className="fixed inset-0 z-50 bg-canvas flex flex-col p-2">
       {/* Top Bar */}
-      <div className="border-b border-border px-4 py-2 flex items-center justify-between bg-card">
+      <div className="border-2 border-primary rounded-t-lg px-4 py-2 flex items-center justify-between bg-background">
         <div className="flex items-center gap-3">
           <Badge variant="outline" className="font-mono text-xs">
             {currentIndex + 1} / {questions.length}
@@ -380,8 +404,9 @@ const JlptExamSession = () => {
                 </span>
               </div>
               {answeredCount < questions.length && (
-                <p className="text-accent font-medium text-sm">
-                  ⚠️ {questions.length - answeredCount} soal belum dijawab!
+                <p className="text-accent font-medium text-sm flex items-center gap-1.5">
+                  <AlertTriangle size={14} strokeWidth={1.75} />
+                  {questions.length - answeredCount} soal belum dijawab!
                 </p>
               )}
             </AlertDialogDescription>

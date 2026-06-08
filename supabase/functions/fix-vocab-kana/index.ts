@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { chatCompletions } from "../_shared/ai.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -45,9 +46,6 @@ serve(async (req) => {
       });
     }
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
-
     // Process in batches of 20
     const batchSize = 20;
     let totalFixed = 0;
@@ -56,25 +54,17 @@ serve(async (req) => {
       const batch = badEntries.slice(i, i + batchSize);
       const wordList = batch.map((v) => v.kanji).join("\n");
 
-      const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "google/gemini-3-flash-preview",
-          messages: [
-            {
-              role: "system",
-              content: `You are a Japanese language expert. Given a list of Japanese words (kanji), return their correct kana readings (hiragana).
+      const aiResponse = await chatCompletions({
+        messages: [
+          {
+            role: "system",
+            content: `You are a Japanese language expert. Given a list of Japanese words (kanji), return their correct kana readings (hiragana).
 Return ONLY a JSON array of objects with "kanji" and "kana" fields. No explanation.
 Example input: 食べる\n飲む
 Example output: [{"kanji":"食べる","kana":"たべる"},{"kanji":"飲む","kana":"のむ"}]`,
-            },
-            { role: "user", content: wordList },
-          ],
-        }),
+          },
+          { role: "user", content: wordList },
+        ],
       });
 
       if (!aiResponse.ok) {

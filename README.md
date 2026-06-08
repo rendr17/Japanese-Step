@@ -1,4 +1,4 @@
-# Japanese Step
+# Nihongo Step
 
 Platform belajar bahasa Jepang dengan materi interaktif, latihan ujian, dan bantuan AI.
 
@@ -40,7 +40,7 @@ Isi `.env` dengan kredensial Supabase Anda, lalu jalankan:
 npm run dev
 ```
 
-Aplikasi berjalan di `http://localhost:5173` (port default Vite).
+Aplikasi berjalan di `http://localhost:8080`.
 
 ## Environment variables
 
@@ -52,7 +52,20 @@ Salin `.env.example` ke `.env` dan isi nilainya. File `.env` **tidak** di-commit
 | `VITE_SUPABASE_PUBLISHABLE_KEY` | Anon/public key Supabase |
 | `VITE_SUPABASE_PROJECT_ID` | ID proyek Supabase |
 
-Edge functions di `supabase/functions/` membutuhkan secret server-side (`LOVABLE_API_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, dll.) yang dikonfigurasi di dashboard Supabase, bukan di `.env` frontend.
+Edge functions di `supabase/functions/` membutuhkan secret server-side yang dikonfigurasi di dashboard Supabase, bukan di `.env` frontend.
+
+| Secret | Deskripsi |
+| --- | --- |
+| `GEMINI_API_KEY` | API key Google Gemini dari [AI Studio](https://aistudio.google.com/apikey) (tier gratis tersedia) |
+| `GEMINI_MODEL` | Opsional — default `gemini-2.0-flash` |
+| `SUPABASE_SERVICE_ROLE_KEY` | Service role key untuk edge functions |
+
+### Google OAuth (login dengan Google)
+
+1. Buat OAuth Client ID di [Google Cloud Console](https://console.cloud.google.com/)
+2. Di Supabase Dashboard → Authentication → Providers → Google: aktifkan dan isi Client ID & Secret
+3. Tambahkan redirect URL: `https://<project-id>.supabase.co/auth/v1/callback`
+4. Untuk dev lokal, tambahkan `http://localhost:8080` di Site URL / Redirect URLs
 
 ## Scripts
 

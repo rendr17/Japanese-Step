@@ -64,7 +64,7 @@ const JlptExamSetup = () => {
         </p>
       </div>
 
-      <Card className="zen-card">
+      <Card className="nori-card">
         <CardHeader>
           <CardTitle className="text-lg flex items-center gap-2">
             <FileText size={20} className="text-primary" />

@@ -1,9 +1,9 @@
-import { motion } from "framer-motion";
 import { AlertCircle, ArrowRight, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useDueReviews } from "@/hooks/useDashboardData";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
+import { cn } from "@/lib/utils";
 
 const CountdownTimer = ({ targetDate }: { targetDate: string }) => {
   const [timeLeft, setTimeLeft] = useState("");
@@ -25,7 +25,7 @@ const CountdownTimer = ({ targetDate }: { targetDate: string }) => {
   }, [targetDate]);
 
   return (
-    <span className="flex items-center gap-1 text-xs text-srs">
+    <span className="flex items-center gap-1 text-xs text-primary normal-case tracking-normal font-medium">
       <Clock size={12} />
       {timeLeft}
     </span>
@@ -39,46 +39,41 @@ const DueReviewWidget = () => {
   const hasDue = count > 0;
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3, ease: "easeOut", delay: 0.15 }}
-      className={`zen-card border-2 ${
-        hasDue ? "border-srs bg-[hsl(var(--srs-alert)/0.05)]" : "border-border"
-      }`}
+    <div
+      className={cn(
+        "nori-card border-2",
+        hasDue ? "border-primary/35" : "border-border",
+      )}
     >
       <div className="flex items-center gap-2 mb-3">
-        <AlertCircle size={18} className={hasDue ? "text-srs" : "text-muted-foreground"} />
-        <h3 className="text-sm font-medium text-foreground">SRS Review</h3>
-        {hasDue && (
-          <span className="srs-badge text-[10px] animate-pulse-soft">{count}</span>
-        )}
+        <AlertCircle size={18} className={hasDue ? "text-primary" : "text-muted-foreground"} />
+        <h3 className="nori-section-title normal-case">SRS Review</h3>
+        {hasDue && <span className="srs-badge text-[10px]">{count}</span>}
       </div>
 
       {hasDue ? (
         <>
-          <p className="text-2xl font-serif font-bold text-foreground mb-1">
+          <p className="text-2xl font-bold text-foreground mb-1 normal-case tracking-normal">
             {count} kartu
           </p>
-          <p className="text-xs text-muted-foreground mb-2">menunggu review</p>
-          {reviews[0] && (
-            <CountdownTimer targetDate={reviews[0].next_review_date} />
-          )}
-          <Button
-            className="mt-4 w-full gap-2 bg-srs hover:bg-srs/90 text-srs-foreground"
-            onClick={() => navigate("/flashcards")}
-          >
+          <p className="text-xs text-muted-foreground mb-2 normal-case tracking-normal font-normal">
+            menunggu review
+          </p>
+          {reviews[0] && <CountdownTimer targetDate={reviews[0].next_review_date} />}
+          <Button className="mt-4 w-full gap-2" onClick={() => navigate("/flashcards")}>
             Mulai Review
             <ArrowRight size={16} />
           </Button>
         </>
       ) : (
         <>
-          <p className="text-lg font-serif font-semibold text-foreground mb-1">🎉 Semua selesai!</p>
-          <p className="text-xs text-muted-foreground">Tidak ada review yang menunggu</p>
+          <p className="text-lg font-bold text-foreground mb-1 normal-case tracking-normal">Semua selesai!</p>
+          <p className="text-xs text-muted-foreground normal-case tracking-normal font-normal">
+            Tidak ada review yang menunggu
+          </p>
         </>
       )}
-    </motion.div>
+    </div>
   );
 };
 

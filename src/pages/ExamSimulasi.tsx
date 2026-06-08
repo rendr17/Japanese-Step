@@ -17,16 +17,13 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid } from "recharts";
 
 const jlptLevels = ["N5", "N4", "N3", "N2", "N1"];
 import { useState } from "react";
+import { useWeakAreas } from "@/hooks/useWeakAreas";
+import { useExamBankStatus } from "@/hooks/useExamQuestions";
+import { useJftBankStatus } from "@/hooks/useJftQuestions";
 
 const chartConfig = {
   score: { label: "Skor", color: "hsl(var(--primary))" },
 };
-
-const weakAreas = [
-  { area: "Grammar", percentage: 45, link: "/materials?category=grammar" },
-  { area: "Reading", percentage: 60, link: "/materials?category=reading" },
-  { area: "Vocabulary", percentage: 72, link: "/vocabulary" },
-];
 
 const container = {
   hidden: { opacity: 0 },
@@ -82,6 +79,9 @@ const ExamSimulasi = () => {
   const navigate = useNavigate();
   const [selectedLevel, setSelectedLevel] = useState("n5");
   const { data: examHistory, isLoading: historyLoading } = useExamHistory();
+  const { data: weakAreas = [] } = useWeakAreas();
+  const { data: jlptBank } = useExamBankStatus(selectedLevel);
+  const { data: jftBank } = useJftBankStatus();
 
   const { data: isAdmin } = useQuery({
     queryKey: ["is-admin", user?.id],
@@ -132,7 +132,7 @@ const ExamSimulasi = () => {
       <div className="grid md:grid-cols-2 gap-5">
         {/* JLPT Card */}
         <motion.div variants={item}>
-          <Card className="border-[hsl(var(--jlpt-muted))] bg-[hsl(var(--jlpt-muted)/0.3)] hover-lift overflow-hidden relative">
+          <Card className="border border-foreground/20 overflow-hidden relative">
             <div className="absolute top-0 right-0 w-32 h-32 bg-[hsl(var(--jlpt)/0.06)] rounded-bl-[80px]" />
             <CardHeader className="pb-3">
               <div className="flex items-center gap-2 mb-1">
@@ -162,6 +162,17 @@ const ExamSimulasi = () => {
                   </Badge>
                 ))}
               </div>
+              {jlptBank && (
+                <p className="text-xs text-muted-foreground">
+                  Bank soal {selectedLevel.toUpperCase()}: {jlptBank.count}/{jlptBank.required}{" "}
+                  <Badge
+                    variant="outline"
+                    className={`ml-1 text-[10px] ${jlptBank.ready ? "border-secondary text-secondary" : "border-accent text-accent"}`}
+                  >
+                    {jlptBank.ready ? "Siap" : "Bank kurang"}
+                  </Badge>
+                </p>
+              )}
               <Button
                 className="w-full bg-jlpt text-jlpt-foreground hover:bg-jlpt/90"
                 onClick={() => navigate(`/exam/jlpt/${selectedLevel}`)}
@@ -175,7 +186,7 @@ const ExamSimulasi = () => {
 
         {/* JFT Card */}
         <motion.div variants={item}>
-          <Card className="border-[hsl(var(--jft-muted))] bg-[hsl(var(--jft-muted)/0.3)] hover-lift overflow-hidden relative">
+          <Card className="border border-primary/35 overflow-hidden relative">
             <div className="absolute top-0 right-0 w-32 h-32 bg-[hsl(var(--jft)/0.06)] rounded-bl-[80px]" />
             <CardHeader className="pb-3">
               <div className="flex items-center gap-2 mb-1">
@@ -188,7 +199,18 @@ const ExamSimulasi = () => {
                 </div>
               </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-4">
+              {jftBank && (
+                <p className="text-xs text-muted-foreground">
+                  Bank soal JFT: {jftBank.count}/{jftBank.required}{" "}
+                  <Badge
+                    variant="outline"
+                    className={`ml-1 text-[10px] ${jftBank.ready ? "border-secondary text-secondary" : "border-accent text-accent"}`}
+                  >
+                    {jftBank.ready ? "Siap" : "Bank kurang"}
+                  </Badge>
+                </p>
+              )}
               <Button
                 className="w-full bg-jft text-jft-foreground hover:bg-jft/90"
                 onClick={() => navigate("/exam/jft")}
@@ -209,9 +231,9 @@ const ExamSimulasi = () => {
         </h2>
 
         {historyLoading ? (
-          <div className="zen-card p-8 text-center text-muted-foreground text-sm">Memuat riwayat...</div>
+          <div className="nori-card p-8 text-center text-muted-foreground text-sm">Memuat riwayat...</div>
         ) : !hasHistory ? (
-          <div className="zen-card p-8 text-center">
+          <div className="nori-card p-8 text-center">
             <div className="text-4xl mb-3">📋</div>
             <p className="text-muted-foreground text-sm">Belum ada riwayat ujian. Mulai simulasi untuk melihat progresmu!</p>
           </div>
@@ -220,7 +242,7 @@ const ExamSimulasi = () => {
             {/* Timeline */}
             <div className="lg:col-span-3 space-y-3">
               {pastResults.map((result, idx) => (
-                <Card key={result.id} className="zen-card p-4">
+                <Card key={result.id} className="nori-card p-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div className="relative">
@@ -270,7 +292,7 @@ const ExamSimulasi = () => {
 
             {/* Score Chart */}
             <div className="lg:col-span-2">
-              <Card className="zen-card h-full">
+              <Card className="nori-card h-full">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm flex items-center gap-1.5">
                     <TrendingUp size={16} className="text-primary" />
@@ -303,7 +325,7 @@ const ExamSimulasi = () => {
 
       {/* Study Recommendations */}
       <motion.div variants={item}>
-        <Card className="zen-card">
+        <Card className="nori-card">
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
               <Target size={18} className="text-accent" />
@@ -337,7 +359,7 @@ const ExamSimulasi = () => {
                         style={{ width: `${area.percentage}%` }}
                       />
                     </div>
-                    <Button variant="link" size="sm" className="h-auto p-0 text-xs text-primary">
+                    <Button variant="link" size="sm" className="h-auto p-0 text-xs text-primary" onClick={() => navigate(area.link)}>
                       <BarChart3 size={12} />
                       Latih {area.area}
                     </Button>

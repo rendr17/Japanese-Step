@@ -10,12 +10,17 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
+.vite
 *.local
 
 # Environment (secrets — never commit)
 .env
 .env.*
 !.env.example
+
+# Local docs and tooling (not for repo)
+docs/
+scripts/
 
 # Editor directories and files
 .vscode/*

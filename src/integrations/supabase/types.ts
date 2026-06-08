@@ -229,6 +229,75 @@ export type Database = {
         }
         Relationships: []
       }
+      starter_materials: {
+        Row: {
+          starter_key: string
+          title: string
+          content: Json | null
+          level: Database["public"]["Enums"]["jlpt_level"]
+          category: Database["public"]["Enums"]["material_category"]
+          tags: string[] | null
+          vocabulary: Json | null
+          grammar_notes: Json | null
+          cultural_note: string | null
+          indonesian_translation: string | null
+          path: Database["public"]["Enums"]["learning_path"]
+        }
+        Insert: {
+          starter_key: string
+          title: string
+          content?: Json | null
+          level?: Database["public"]["Enums"]["jlpt_level"]
+          category: Database["public"]["Enums"]["material_category"]
+          tags?: string[] | null
+          vocabulary?: Json | null
+          grammar_notes?: Json | null
+          cultural_note?: string | null
+          indonesian_translation?: string | null
+          path?: Database["public"]["Enums"]["learning_path"]
+        }
+        Update: {
+          starter_key?: string
+          title?: string
+          content?: Json | null
+          level?: Database["public"]["Enums"]["jlpt_level"]
+          category?: Database["public"]["Enums"]["material_category"]
+          tags?: string[] | null
+          vocabulary?: Json | null
+          grammar_notes?: Json | null
+          cultural_note?: string | null
+          indonesian_translation?: string | null
+          path?: Database["public"]["Enums"]["learning_path"]
+        }
+        Relationships: []
+      }
+      starter_vocab: {
+        Row: {
+          starter_key: string
+          kanji: string | null
+          kana: string
+          meaning: string
+          jlpt_level: Database["public"]["Enums"]["jlpt_level"] | null
+          tags: string[] | null
+        }
+        Insert: {
+          starter_key: string
+          kanji?: string | null
+          kana: string
+          meaning: string
+          jlpt_level?: Database["public"]["Enums"]["jlpt_level"] | null
+          tags?: string[] | null
+        }
+        Update: {
+          starter_key?: string
+          kanji?: string | null
+          kana?: string
+          meaning?: string
+          jlpt_level?: Database["public"]["Enums"]["jlpt_level"] | null
+          tags?: string[] | null
+        }
+        Relationships: []
+      }
       materials: {
         Row: {
           category: Database["public"]["Enums"]["material_category"]
@@ -241,6 +310,7 @@ export type Database = {
           is_favorite: boolean
           level: Database["public"]["Enums"]["jlpt_level"]
           source_import_id: string | null
+          starter_key: string | null
           tags: string[] | null
           title: string
           updated_at: string
@@ -258,6 +328,7 @@ export type Database = {
           is_favorite?: boolean
           level?: Database["public"]["Enums"]["jlpt_level"]
           source_import_id?: string | null
+          starter_key?: string | null
           tags?: string[] | null
           title: string
           updated_at?: string
@@ -275,6 +346,7 @@ export type Database = {
           is_favorite?: boolean
           level?: Database["public"]["Enums"]["jlpt_level"]
           source_import_id?: string | null
+          starter_key?: string | null
           tags?: string[] | null
           title?: string
           updated_at?: string
@@ -317,6 +389,7 @@ export type Database = {
           id: string
           last_activity_date: string | null
           longest_streak: number
+          onboarding_completed: boolean
           reduce_motion: boolean | null
           srs_reminders: boolean | null
           study_reminder_time: string | null
@@ -343,6 +416,7 @@ export type Database = {
           id: string
           last_activity_date?: string | null
           longest_streak?: number
+          onboarding_completed?: boolean
           reduce_motion?: boolean | null
           srs_reminders?: boolean | null
           study_reminder_time?: string | null
@@ -369,6 +443,7 @@ export type Database = {
           id?: string
           last_activity_date?: string | null
           longest_streak?: number
+          onboarding_completed?: boolean
           reduce_motion?: boolean | null
           srs_reminders?: boolean | null
           study_reminder_time?: string | null

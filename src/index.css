@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+JP:wght@300;400;500;700&family=Noto+Serif+JP:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Noto+Sans+JP:wght@300;400;500;700&family=Noto+Serif+JP:wght@400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,115 +6,65 @@
 
 @layer base {
   :root {
-    /* Nihongo-Step: Zen-Modern Productivity */
-    --background: 40 20% 98%;
-    --foreground: 215 28% 17%;
+    /* Nihongo Step: NORI Balanced — medium terracotta & warm cream */
+    --canvas: 18 30% 88%;
+    --background: 36 26% 95%;
+    --foreground: 24 12% 26%;
 
-    --card: 40 25% 97%;
-    --card-foreground: 215 28% 17%;
+    --card: 36 22% 93%;
+    --card-foreground: 24 12% 26%;
 
-    --popover: 40 20% 98%;
-    --popover-foreground: 215 28% 17%;
+    --popover: 36 26% 95%;
+    --popover-foreground: 24 12% 26%;
 
-    --primary: 207 34% 24%;
-    --primary-foreground: 40 20% 98%;
+    --primary: 12 52% 50%;
+    --primary-foreground: 36 30% 98%;
 
-    --secondary: 80 41% 30%;
-    --secondary-foreground: 40 20% 98%;
+    --secondary: 24 12% 32%;
+    --secondary-foreground: 36 30% 98%;
 
-    --muted: 40 15% 93%;
-    --muted-foreground: 215 15% 45%;
+    --muted: 34 18% 90%;
+    --muted-foreground: 25 8% 46%;
 
-    --accent: 14 68% 63%;
-    --accent-foreground: 40 20% 98%;
+    --accent: 12 52% 50%;
+    --accent-foreground: 36 30% 98%;
 
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 4 50% 52%;
+    --destructive-foreground: 36 30% 98%;
 
-    --border: 40 15% 90%;
-    --input: 40 15% 90%;
-    --ring: 207 34% 24%;
+    --border: 25 8% 30% / 0.14;
+    --input: 25 8% 30% / 0.14;
+    --ring: 12 52% 50%;
 
-    --radius: 0.75rem;
+    --radius: 1rem;
+    --frame-radius: 1.5rem;
+    --frame-padding: 1rem;
+    --frame-border: 14 25% 76%;
 
-    /* Custom tokens */
-    --jlpt: 207 34% 24%;
-    --jlpt-foreground: 40 20% 98%;
-    --jlpt-muted: 207 25% 92%;
+    /* Domain tokens — balanced NORI palette */
+    --jlpt: 24 12% 32%;
+    --jlpt-foreground: 36 30% 98%;
+    --jlpt-muted: 34 18% 89%;
 
-    --jft: 80 41% 30%;
-    --jft-foreground: 40 20% 98%;
-    --jft-muted: 80 25% 92%;
+    --jft: 36 26% 95%;
+    --jft-foreground: 24 12% 26%;
+    --jft-muted: 34 18% 90%;
 
-    --srs-alert: 14 68% 63%;
-    --srs-alert-foreground: 40 20% 98%;
+    --srs-alert: 8 55% 52%;
+    --srs-alert-foreground: 36 30% 98%;
 
-    --warm-50: 40 30% 99%;
-    --warm-100: 40 25% 96%;
-    --warm-200: 40 20% 92%;
+    --warm-50: 36 28% 98%;
+    --warm-100: 36 26% 95%;
+    --warm-200: 34 18% 90%;
 
-    --sidebar-background: 40 25% 96%;
-    --sidebar-foreground: 215 28% 17%;
-    --sidebar-primary: 207 34% 24%;
-    --sidebar-primary-foreground: 40 20% 98%;
-    --sidebar-accent: 40 20% 92%;
-    --sidebar-accent-foreground: 215 28% 17%;
-    --sidebar-border: 40 15% 90%;
-    --sidebar-ring: 207 34% 24%;
-  }
-
-  .dark {
-    --background: 220 20% 8%;
-    --foreground: 40 20% 92%;
-
-    --card: 220 18% 11%;
-    --card-foreground: 40 20% 92%;
-
-    --popover: 220 18% 11%;
-    --popover-foreground: 40 20% 92%;
-
-    --primary: 207 45% 55%;
-    --primary-foreground: 220 20% 8%;
-
-    --secondary: 80 35% 45%;
-    --secondary-foreground: 220 20% 8%;
-
-    --muted: 220 15% 15%;
-    --muted-foreground: 40 10% 55%;
-
-    --accent: 14 60% 55%;
-    --accent-foreground: 220 20% 8%;
-
-    --destructive: 0 62% 30%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 220 15% 18%;
-    --input: 220 15% 18%;
-    --ring: 207 45% 55%;
-
-    --jlpt: 207 45% 55%;
-    --jlpt-foreground: 220 20% 8%;
-    --jlpt-muted: 207 20% 18%;
-
-    --jft: 80 35% 45%;
-    --jft-foreground: 220 20% 8%;
-    --jft-muted: 80 15% 18%;
-
-    --srs-alert: 14 60% 55%;
-    --srs-alert-foreground: 220 20% 8%;
-
-    --warm-50: 220 18% 10%;
-    --warm-100: 220 16% 13%;
-    --warm-200: 220 14% 16%;
-
-    --sidebar-background: 220 18% 10%;
-    --sidebar-foreground: 40 20% 92%;
-    --sidebar-primary: 207 45% 55%;
-    --sidebar-primary-foreground: 220 20% 8%;
-    --sidebar-accent: 220 14% 16%;
-    --sidebar-accent-foreground: 40 20% 92%;
-    --sidebar-border: 220 15% 18%;
-    --sidebar-ring: 207 45% 55%;
+    --sidebar-background: 36 26% 95%;
+    --sidebar-foreground: 24 12% 26%;
+    --sidebar-primary: 12 52% 50%;
+    --sidebar-primary-foreground: 36 30% 98%;
+    --sidebar-accent: 34 18% 90%;
+    --sidebar-accent-foreground: 24 12% 26%;
+    --sidebar-border: 25 8% 30% / 0.14;
+    --sidebar-ring: 12 52% 50%;
   }
 }
 
@@ -124,47 +74,57 @@
   }
 
   body {
-    @apply bg-background text-foreground font-sans antialiased;
+    @apply bg-canvas text-foreground font-sans antialiased;
   }
 
   h1, h2, h3, h4 {
-    @apply font-serif;
+    @apply font-sans font-bold uppercase tracking-wide;
   }
 }
 
 @layer components {
-  .zen-card {
-    @apply bg-card rounded-xl border border-border p-6 transition-all duration-300 ease-out;
+  /* Legacy alias — maps to nori-card for gradual migration */
+  .zen-card,
+  .nori-card {
+    @apply bg-card rounded-lg border border-border p-6;
   }
 
-  .zen-card:hover {
-    @apply shadow-lg;
-    transform: translateY(-2px);
+  .nori-jp-display {
+    @apply font-jp text-primary font-bold leading-none;
+  }
+
+  .nori-section-title {
+    @apply font-sans font-bold uppercase tracking-widest text-sm text-foreground;
+  }
+
+  .nori-nav-active {
+    @apply text-foreground font-medium border-b-2 border-primary/60 pb-0.5;
   }
 
   .jlpt-badge {
-    @apply bg-[hsl(var(--jlpt))] text-[hsl(var(--jlpt-foreground))] px-3 py-1 rounded-full text-xs font-medium;
+    @apply bg-[hsl(var(--jlpt))] text-[hsl(var(--jlpt-foreground))] px-2.5 py-0.5 rounded-md text-xs font-semibold uppercase tracking-wide;
   }
 
   .jft-badge {
-    @apply bg-[hsl(var(--jft))] text-[hsl(var(--jft-foreground))] px-3 py-1 rounded-full text-xs font-medium;
+    @apply bg-[hsl(var(--jft))] text-[hsl(var(--jft-foreground))] border border-primary/40 px-2.5 py-0.5 rounded-md text-xs font-semibold uppercase tracking-wide;
   }
 
   .srs-badge {
-    @apply bg-[hsl(var(--srs-alert))] text-[hsl(var(--srs-alert-foreground))] px-3 py-1 rounded-full text-xs font-medium;
+    @apply bg-[hsl(var(--srs-alert))] text-[hsl(var(--srs-alert-foreground))] px-2.5 py-0.5 rounded-md text-xs font-semibold uppercase tracking-wide;
   }
 
   .japanese-text {
     @apply font-jp leading-relaxed;
   }
 
-  .hover-lift {
-    @apply transition-all duration-300 ease-out;
+  .nori-frame {
+    @apply min-h-[calc(100vh-2rem)] bg-background rounded-[var(--frame-radius)] border-2 border-[hsl(var(--frame-border))] flex overflow-hidden;
   }
 
-  .hover-lift:hover {
-    transform: translateY(-4px);
-    @apply shadow-xl;
+  .nori-wavy-line {
+    @apply w-12 h-1;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 4'%3E%3Cpath d='M0 2 Q6 0 12 2 T24 2 T36 2 T48 2' stroke='%235C4F47' stroke-width='1.5' fill='none'/%3E%3C/svg%3E") no-repeat center;
+    background-size: contain;
   }
 
   /* Tiptap editor styles */
@@ -173,15 +133,15 @@
   }
 
   .tiptap h1 {
-    @apply text-2xl font-serif font-bold mb-3 mt-5;
+    @apply text-2xl font-sans font-bold uppercase tracking-wide mb-3 mt-5;
   }
 
   .tiptap h2 {
-    @apply text-xl font-serif font-semibold mb-2 mt-4;
+    @apply text-xl font-sans font-bold uppercase tracking-wide mb-2 mt-4;
   }
 
   .tiptap h3 {
-    @apply text-lg font-serif font-medium mb-2 mt-3;
+    @apply text-lg font-sans font-semibold mb-2 mt-3;
   }
 
   .tiptap p {
@@ -212,8 +172,27 @@
     @apply rounded-lg max-w-full my-3;
   }
 
+  .prose ruby,
+  .font-jp ruby {
+    ruby-position: over;
+  }
+
+  .prose ruby rt,
+  .font-jp ruby rt,
   .tiptap ruby rt {
-    @apply text-[0.6em] text-muted-foreground;
+    @apply text-[0.55em] leading-none text-muted-foreground;
+    font-weight: 400;
+  }
+
+  .furigana-hover ruby rt,
+  .furigana-hover ruby rp {
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+
+  .furigana-hover ruby:hover rt,
+  .furigana-hover ruby:hover rp {
+    opacity: 1;
   }
 
   .tiptap p.is-editor-empty:first-child::before {

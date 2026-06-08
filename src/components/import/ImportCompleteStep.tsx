@@ -22,7 +22,7 @@ const ImportCompleteStep = ({ materialCount, vocabCount, firstMaterialId, onNavi
       </div>
 
       <div>
-        <h2 className="text-2xl font-serif font-bold text-foreground mb-2">Import Selesai! 🎉</h2>
+        <h2 className="text-2xl font-serif font-bold text-foreground mb-2">Import Selesai!</h2>
         <p className="text-muted-foreground">Materi belajar berhasil diimpor dan disusun rapi.</p>
       </div>
 

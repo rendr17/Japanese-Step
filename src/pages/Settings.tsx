@@ -145,8 +145,8 @@ const Settings = () => {
               <Select value={settings.current_path} onValueChange={(v) => updateSetting("current_path", v as any)}>
                 <SelectTrigger className="w-[180px] h-9 text-sm"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="jlpt_academic">🎌 JLPT (Akademik)</SelectItem>
-                  <SelectItem value="jft_practical">🏢 JFT (Praktis)</SelectItem>
+                  <SelectItem value="jlpt_academic">JLPT (Akademik)</SelectItem>
+                  <SelectItem value="jft_practical">JFT (Praktis)</SelectItem>
                 </SelectContent>
               </Select>
             </SettingRow>
@@ -195,12 +195,10 @@ const Settings = () => {
             <h2 className="text-lg font-semibold flex items-center gap-2"><Monitor size={18} /> Tampilan</h2>
 
             <SettingRow label="Tema">
-              <Select value={settings.theme_preference} onValueChange={(v) => updateSetting("theme_preference", v)}>
-                <SelectTrigger className="w-[140px] h-9 text-sm"><SelectValue /></SelectTrigger>
+              <Select value="light" disabled>
+                <SelectTrigger className="w-[140px] h-9 text-sm"><SelectValue placeholder="Light (NORI)" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="light">☀️ Light</SelectItem>
-                  <SelectItem value="dark">🌙 Dark</SelectItem>
-                  <SelectItem value="auto">🔄 Auto</SelectItem>
+                  <SelectItem value="light">Light — NORI Theme</SelectItem>
                 </SelectContent>
               </Select>
             </SettingRow>
@@ -209,9 +207,9 @@ const Settings = () => {
               <Select value={settings.ui_language} onValueChange={(v) => updateSetting("ui_language", v)}>
                 <SelectTrigger className="w-[160px] h-9 text-sm"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="indonesian">🇮🇩 Indonesia</SelectItem>
-                  <SelectItem value="english">🇬🇧 English</SelectItem>
-                  <SelectItem value="japanese">🇯🇵 日本語</SelectItem>
+                  <SelectItem value="indonesian">Indonesia</SelectItem>
+                  <SelectItem value="english">English</SelectItem>
+                  <SelectItem value="japanese">日本語</SelectItem>
                 </SelectContent>
               </Select>
             </SettingRow>

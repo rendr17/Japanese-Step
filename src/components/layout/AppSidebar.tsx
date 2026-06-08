@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
 import {
   LayoutDashboard,
   BookOpen,
@@ -13,22 +12,22 @@ import {
   Languages,
   Bot,
   Sparkles,
-  LogOut,
   ChevronLeft,
   Menu,
   X,
   Grid3x3,
+  GraduationCap,
+  Dumbbell,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/client";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 import { useSrsDueCount } from "@/hooks/useSrsBadge";
-import { useProfile } from "@/hooks/useDashboardData";
 
 const navItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/" },
+  { icon: GraduationCap, label: "Belajar", path: "/learn" },
+  { icon: Dumbbell, label: "Latihan", path: "/practice" },
   { icon: BookOpen, label: "Materi Belajar", path: "/materials" },
   { icon: FileUp, label: "Import Materi", path: "/materials/import" },
   { icon: BookMarked, label: "Kosakata Saya", path: "/vocabulary" },
@@ -47,168 +46,133 @@ interface AppSidebarProps {
   onToggle: () => void;
 }
 
+const NoriLogo = ({ compact = false }: { compact?: boolean }) => (
+  <div className={cn("flex items-center gap-2.5", compact && "justify-center")}>
+    <div className="w-10 h-10 bg-primary flex flex-col items-center justify-center shrink-0 leading-none">
+      <span className="text-primary-foreground font-jp font-bold text-sm">日</span>
+      <span className="text-primary-foreground font-jp font-bold text-sm -mt-0.5">歩</span>
+    </div>
+    {!compact && (
+      <div>
+        <h1 className="text-base font-bold uppercase tracking-widest text-foreground">Nihongo Step</h1>
+        <p className="text-[10px] text-muted-foreground tracking-wider uppercase">一歩ずつ</p>
+      </div>
+    )}
+  </div>
+);
+
 const AppSidebar = ({ collapsed, onToggle }: AppSidebarProps) => {
   const navigate = useNavigate();
   const location = useLocation();
   const isMobile = useIsMobile();
   const [mobileOpen, setMobileOpen] = useState(false);
   const { data: srsDueCount = 0 } = useSrsDueCount();
-  const { data: profile } = useProfile();
-  const displayName = profile?.display_name || "Learner";
-
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    navigate("/login");
-  };
 
   const handleNav = (path: string) => {
     navigate(path);
     if (isMobile) setMobileOpen(false);
   };
 
+  const isPathActive = (path: string) => {
+    if (path === "/") return location.pathname === "/";
+    return location.pathname === path || location.pathname.startsWith(`${path}/`);
+  };
+
   const sidebarContent = (
     <div className="flex flex-col h-full">
-      {/* Logo */}
-      <div className={cn("flex items-center gap-2.5 mb-8", collapsed && !isMobile && "justify-center")}>
-        <div className="w-9 h-9 rounded-lg bg-primary flex items-center justify-center shrink-0">
-          <span className="text-primary-foreground font-serif font-bold text-lg">歩</span>
-        </div>
-        {(!collapsed || isMobile) && (
-          <div>
-            <h1 className="text-lg font-serif font-bold text-foreground tracking-tight">
-              Nihongo-Step
-            </h1>
-            <p className="text-[10px] text-muted-foreground -mt-0.5 tracking-wider uppercase">
-              一歩ずつ
-            </p>
-          </div>
-        )}
+      <div className={cn("mb-6", collapsed && !isMobile && "flex justify-center")}>
+        <NoriLogo compact={collapsed && !isMobile} />
       </div>
 
-      {/* Navigation */}
-      <nav className="flex-1 space-y-1">
+      <nav className="flex-1 space-y-0.5 overflow-y-auto">
         {navItems.map((item) => {
-          const isActive = location.pathname === item.path;
+          const isActive = isPathActive(item.path);
           const Icon = item.icon;
           return (
             <button
               key={item.path}
               onClick={() => handleNav(item.path)}
               className={cn(
-                "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group relative",
+                "w-full flex items-center gap-3 px-3 py-2 text-sm transition-colors relative group",
                 isActive
-                  ? "bg-primary text-primary-foreground shadow-md"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted/60",
-                collapsed && !isMobile && "justify-center px-2"
+                  ? "text-foreground font-medium"
+                  : "text-muted-foreground hover:text-foreground",
+                collapsed && !isMobile && "justify-center px-2",
               )}
             >
-              <Icon size={20} className="shrink-0" />
+              <Icon size={18} className="shrink-0 text-foreground/70" strokeWidth={1.75} />
               {(!collapsed || isMobile) && (
                 <>
-                  <span className="flex-1 text-left">{item.label}</span>
+                  <span
+                    className={cn(
+                      "flex-1 text-left normal-case tracking-normal font-medium",
+                      isActive && "border-b-2 border-primary/50 pb-0.5 inline-block",
+                    )}
+                  >
+                    {item.label}
+                  </span>
                   {item.badge && srsDueCount > 0 && (
-                    <Badge className="bg-srs text-srs-foreground text-[10px] px-1.5 py-0 h-5 min-w-5 flex items-center justify-center">
+                    <Badge className="text-[10px] px-1.5 py-0 h-5 min-w-5 flex items-center justify-center">
                       {srsDueCount > 99 ? "99+" : srsDueCount}
                     </Badge>
                   )}
                 </>
               )}
               {collapsed && !isMobile && item.badge && srsDueCount > 0 && (
-                <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-srs text-srs-foreground text-[9px] flex items-center justify-center font-bold">
-                  {srsDueCount > 9 ? "9+" : srsDueCount}
-                </span>
+                <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-primary" />
               )}
             </button>
           );
         })}
       </nav>
-
-      {/* User footer */}
-      <div className="pt-4 border-t border-border/50 space-y-3">
-        <div className={cn("flex items-center gap-3", collapsed && !isMobile && "justify-center")}>
-          <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center shrink-0">
-            <span className="text-xs font-medium text-foreground">学</span>
-          </div>
-          {(!collapsed || isMobile) && (
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-foreground truncate">{displayName}</p>
-              <p className="text-xs text-muted-foreground">Free Plan</p>
-            </div>
-          )}
-        </div>
-        <Button
-          variant="ghost"
-          size={collapsed && !isMobile ? "icon" : "sm"}
-          onClick={handleLogout}
-          className="w-full text-muted-foreground hover:text-destructive"
-        >
-          <LogOut size={16} />
-          {(!collapsed || isMobile) && <span className="ml-2">Logout</span>}
-        </Button>
-      </div>
     </div>
   );
 
-  // Mobile
   if (isMobile) {
     return (
       <>
-        <div className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4 h-14 bg-card/80 backdrop-blur-xl border-b border-border/50">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-              <span className="text-primary-foreground font-serif font-bold">歩</span>
-            </div>
-            <span className="font-serif font-bold text-foreground">Nihongo-Step</span>
-          </div>
+        <div className="fixed top-3 left-3 right-3 z-50 flex items-center justify-between px-4 h-12 bg-background border border-[hsl(var(--frame-border))] rounded-lg">
+          <NoriLogo />
           <button
             onClick={() => setMobileOpen(!mobileOpen)}
-            className="p-2 text-foreground hover:bg-muted rounded-lg transition-colors"
+            className="p-2 text-foreground hover:bg-muted rounded-md transition-colors"
+            aria-label={mobileOpen ? "Close menu" : "Open menu"}
           >
             {mobileOpen ? <X size={22} /> : <Menu size={22} />}
           </button>
         </div>
 
-        <AnimatePresence>
-          {mobileOpen && (
-            <>
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="fixed inset-0 z-40 bg-background/60 backdrop-blur-sm"
-                onClick={() => setMobileOpen(false)}
-              />
-              <motion.aside
-                initial={{ x: -280 }}
-                animate={{ x: 0 }}
-                exit={{ x: -280 }}
-                transition={{ type: "spring", damping: 25, stiffness: 300 }}
-                className="fixed top-14 left-0 bottom-0 z-50 w-[280px] p-5 bg-card/90 backdrop-blur-2xl border-r border-border/50"
-              >
-                {sidebarContent}
-              </motion.aside>
-            </>
-          )}
-        </AnimatePresence>
+        {mobileOpen && (
+          <>
+            <div
+              className="fixed inset-0 z-40 bg-foreground/20"
+              onClick={() => setMobileOpen(false)}
+            />
+            <aside className="fixed top-[4.5rem] left-3 bottom-3 z-50 w-[280px] p-5 bg-background border border-[hsl(var(--frame-border))] rounded-lg overflow-y-auto">
+              {sidebarContent}
+            </aside>
+          </>
+        )}
       </>
     );
   }
 
-  // Desktop
   return (
-    <motion.aside
-      animate={{ width: collapsed ? 72 : 256 }}
-      transition={{ duration: 0.25, ease: "easeInOut" }}
-      className="hidden lg:flex flex-col shrink-0 min-h-screen p-4 bg-card/70 backdrop-blur-2xl border-r border-border/50 relative"
+    <aside
+      className={cn(
+        "hidden lg:flex flex-col shrink-0 sticky top-0 self-start h-[calc(100vh-2rem)] overflow-y-auto p-4 bg-background border-r border-border relative transition-[width] duration-200",
+        collapsed ? "w-[72px]" : "w-[256px]",
+      )}
     >
       <button
         onClick={onToggle}
-        className="absolute -right-3 top-8 z-10 w-6 h-6 rounded-full bg-card border border-border shadow-sm flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+        className="absolute -right-3 top-8 z-10 w-6 h-6 rounded-md bg-background border-2 border-foreground/20 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+        aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
       >
         <ChevronLeft size={14} className={cn("transition-transform", collapsed && "rotate-180")} />
       </button>
       {sidebarContent}
-    </motion.aside>
+    </aside>
   );
 };
 

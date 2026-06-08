@@ -29,6 +29,8 @@ import SettingsPage from "./pages/Settings";
 import Flashcards from "./pages/Flashcards";
 import KanaTable from "./pages/KanaTable";
 import Progress from "./pages/Progress";
+import Learn from "./pages/Learn";
+import PracticeHub from "./pages/PracticeHub";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -50,6 +52,8 @@ const App = () => (
             <Route element={<ProtectedRoute />}>
               <Route element={<AppLayout />}>
                 <Route path="/" element={<Index />} />
+                <Route path="/learn" element={<Learn />} />
+                <Route path="/practice" element={<PracticeHub />} />
                 <Route path="/materials" element={<Materials />} />
                 <Route path="/materials/import" element={<MaterialImport />} />
                 <Route path="/materials/:id" element={<MaterialDetail />} />

@@ -1,4 +1,5 @@
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, BookMarked } from "lucide-react";
+import SectionHeading from "@/components/ui/section-heading";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -38,7 +39,7 @@ const ImportVocabStep = ({ analysis, setAnalysis, onSave, onBack, isSaving, save
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold">📚 Kosakata Terdeteksi ({analysis.vocabulary.length})</h3>
+        <SectionHeading icon={BookMarked} label="Kosakata Terdeteksi" count={analysis.vocabulary.length} />
         <div className="flex gap-2">
           <Button variant="ghost" size="sm" className="text-xs" onClick={() => selectAll(true)}>Pilih Semua</Button>
           <Button variant="ghost" size="sm" className="text-xs" onClick={() => selectAll(false)}>Hapus Semua</Button>

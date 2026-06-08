@@ -87,6 +87,9 @@ export function useChatMessages(conversationId: string | null) {
   const sendMessage = async (content: string, conversationId: string, user: { id: string }) => {
     if (!user) return;
 
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+
     // Save user message
     const { data: userMsg } = await supabase
       .from("chat_messages")
@@ -101,11 +104,24 @@ export function useChatMessages(conversationId: string | null) {
     // Fetch user context
     const userContext = await fetchUserContext(user.id);
 
-    // Build message history for API
-    const apiMessages = [...messages, { role: "user" as const, content }].map(m => ({
-      role: m.role,
+    // Build message history from DB (includes the message just saved)
+    const { data: history } = await supabase
+      .from("chat_messages")
+      .select("role, content")
+      .eq("conversation_id", conversationId)
+      .order("created_at", { ascending: true });
+
+    const apiMessages = (history ?? []).map((m) => ({
+      role: m.role as "user" | "assistant",
       content: m.content,
     }));
+
+    const { count: priorCount } = await supabase
+      .from("chat_messages")
+      .select("id", { count: "exact", head: true })
+      .eq("conversation_id", conversationId)
+      .eq("role", "user");
+    const isFirstUserMessage = (priorCount ?? 0) <= 1;
 
     // Stream response
     setIsStreaming(true);
@@ -116,7 +132,7 @@ export function useChatMessages(conversationId: string | null) {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          Authorization: `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({ messages: apiMessages, userContext }),
       });
@@ -201,7 +217,7 @@ export function useChatMessages(conversationId: string | null) {
         }
 
         // Update conversation title from first user message
-        if (messages.length === 0) {
+        if (isFirstUserMessage) {
           const title = content.slice(0, 60) + (content.length > 60 ? "…" : "");
           await supabase.from("chat_conversations").update({ title }).eq("id", conversationId);
         }

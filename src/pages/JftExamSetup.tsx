@@ -66,7 +66,7 @@ const JftExamSetup = () => {
         </p>
       </div>
 
-      <Card className="zen-card border-[hsl(var(--jft-muted))]">
+      <Card className="nori-card border-[hsl(var(--jft-muted))]">
         <CardHeader>
           <CardTitle className="text-lg flex items-center gap-2">
             <FileText size={20} style={{ color: "hsl(var(--jft))" }} />

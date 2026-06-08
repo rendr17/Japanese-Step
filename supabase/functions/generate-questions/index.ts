@@ -1,16 +1,14 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
+import { corsHeaders } from "../_shared/cors.ts";
+import { requireAdmin } from "../_shared/auth.ts";
+import { chatCompletions } from "../_shared/ai.ts";
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
+    const authResult = await requireAdmin(req);
+    if (authResult instanceof Response) return authResult;
 
     const { exam_type, level, section, count = 5 } = await req.json();
 
@@ -43,18 +41,12 @@ ATURAN PENTING:
 
     const userPrompt = `Buat ${count} soal ${section} untuk ${examLabel}. Kembalikan sebagai JSON array.`;
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userPrompt },
-        ],
-        tools: [
+    const response = await chatCompletions({
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt },
+      ],
+      tools: [
           {
             type: "function",
             function: {
@@ -84,9 +76,8 @@ ATURAN PENTING:
               },
             },
           },
-        ],
-        tool_choice: { type: "function", function: { name: "generate_questions" } },
-      }),
+      ],
+      tool_choice: { type: "function", function: { name: "generate_questions" } },
     });
 
     if (!response.ok) {

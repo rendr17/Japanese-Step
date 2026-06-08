@@ -1,11 +1,13 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { useToast } from "@/hooks/use-toast";
 import type { Database } from "@/integrations/supabase/types";
+import { cn } from "@/lib/utils";
 
 type LearningPath = Database["public"]["Enums"]["learning_path"];
 
@@ -18,216 +20,264 @@ const LEVELS = [
   { value: "n1" as const, label: "N1", desc: "Mahir" },
 ];
 
-const stepVariants = {
-  enter: { opacity: 0, x: 40 },
-  center: { opacity: 1, x: 0 },
-  exit: { opacity: 0, x: -40 },
-};
-
 const Onboarding = () => {
   const [step, setStep] = useState(0);
   const [path, setPath] = useState<LearningPath>("jlpt_academic");
   const [dailyXp, setDailyXp] = useState(50);
   const [level, setLevel] = useState<string>("none");
   const [loading, setLoading] = useState(false);
-  const [userId, setUserId] = useState<string | null>(null);
+  const { user, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const { data: onboardingDone, isLoading: statusLoading } = useQuery({
+    queryKey: ["onboarding-status", user?.id],
+    queryFn: async () => {
+      if (!user) return false;
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("onboarding_completed")
+        .eq("id", user.id)
+        .single();
+      if (error) return false;
+      return data?.onboarding_completed ?? false;
+    },
+    enabled: !!user,
+  });
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      if (data.session?.user) setUserId(data.session.user.id);
-    });
-  }, []);
+    if (authLoading || statusLoading) return;
+    if (!user) {
+      navigate("/login", { replace: true });
+      return;
+    }
+    if (onboardingDone) {
+      navigate("/", { replace: true });
+    }
+  }, [authLoading, statusLoading, user, onboardingDone, navigate]);
 
   const minutesEstimate = Math.round((dailyXp / 50) * 15);
 
-  const handleFinish = async () => {
-    if (!userId) {
-      navigate("/");
-      return;
-    }
-    setLoading(true);
-    const { error } = await supabase
+  const saveOnboarding = async (userId: string) => {
+    const payload = {
+      current_path: path,
+      daily_goal_xp: dailyXp,
+      default_jlpt_level: level === "none" ? null : level,
+      onboarding_completed: true,
+    };
+
+    const { data, error } = await supabase
       .from("profiles")
-      .update({ current_path: path, daily_goal_xp: dailyXp })
-      .eq("id", userId);
-    setLoading(false);
-    if (error) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
-    } else {
-      navigate("/");
+      .update(payload)
+      .eq("id", userId)
+      .select("onboarding_completed")
+      .maybeSingle();
+
+    if (!error && data?.onboarding_completed === true) {
+      return { ok: true as const };
     }
+
+    const { data: upserted, error: upsertError } = await supabase
+      .from("profiles")
+      .upsert({ id: userId, ...payload })
+      .select("onboarding_completed")
+      .single();
+
+    if (upsertError || upserted?.onboarding_completed !== true) {
+      return {
+        ok: false as const,
+        message: upsertError?.message ?? error?.message ?? "Profil tidak dapat disimpan",
+      };
+    }
+
+    return { ok: true as const };
   };
 
+  const handleFinish = async () => {
+    if (!user) {
+      navigate("/login", { replace: true });
+      return;
+    }
+
+    setLoading(true);
+    const result = await saveOnboarding(user.id);
+    setLoading(false);
+
+    if (!result.ok) {
+      toast({
+        title: "Error",
+        description: result.message,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    queryClient.setQueryData(["onboarding-status", user.id], true);
+    await queryClient.invalidateQueries({ queryKey: ["onboarding-status", user.id] });
+    await queryClient.invalidateQueries({ queryKey: ["profile"] });
+    navigate("/", { replace: true });
+  };
+
+  if (authLoading || statusLoading || !user || onboardingDone) {
+    return <div className="min-h-screen bg-canvas" />;
+  }
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-[hsl(var(--warm-100))] to-[hsl(var(--warm-200))] p-4">
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.4 }}
-        className="w-full max-w-lg"
-      >
-        <div className="zen-card space-y-6">
-          {/* Progress dots */}
+    <div className="min-h-screen bg-canvas p-3 md:p-4 flex items-center justify-center">
+      <div className="w-full max-w-lg nori-frame p-6 sm:p-8">
+        <div className="space-y-6">
           <div className="flex justify-center gap-2">
             {[0, 1, 2].map((i) => (
               <div
                 key={i}
-                className={`h-2 rounded-full transition-all duration-300 ${
-                  i === step ? "w-8 bg-primary" : i < step ? "w-2 bg-primary/60" : "w-2 bg-border"
-                }`}
+                className={cn(
+                  "h-1 rounded-sm transition-all duration-200",
+                  i === step ? "w-10 bg-primary" : i < step ? "w-4 bg-primary/50" : "w-4 bg-border",
+                )}
               />
             ))}
           </div>
 
-          <AnimatePresence mode="wait">
-            {step === 0 && (
-              <motion.div
-                key="step0"
-                variants={stepVariants}
-                initial="enter"
-                animate="center"
-                exit="exit"
-                transition={{ duration: 0.3 }}
-                className="space-y-6"
-              >
-                <div className="text-center space-y-2">
-                  <h1 className="text-2xl font-bold text-foreground">Pilih Jalur Belajar</h1>
-                  <p className="text-muted-foreground">Sesuaikan dengan tujuan Anda</p>
+          {step === 0 && (
+            <div className="space-y-6">
+              <div className="text-center space-y-2">
+                <p className="nori-jp-display text-3xl">学習</p>
+                <div className="nori-wavy-line mx-auto" />
+                <h1 className="text-xl font-bold uppercase tracking-wide text-foreground mt-4">Pilih Jalur Belajar</h1>
+                <p className="text-muted-foreground normal-case tracking-normal font-normal text-sm">
+                  Sesuaikan dengan tujuan Anda
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <button
+                  type="button"
+                  onClick={() => setPath("jlpt_academic")}
+                  className={cn(
+                    "p-5 rounded-lg border-2 text-left transition-colors",
+                    path === "jlpt_academic"
+                      ? "border-foreground bg-card"
+                      : "border-border hover:border-foreground/30",
+                  )}
+                >
+                  <span className="nori-jp-display text-2xl block mb-2">試験</span>
+                  <h3 className="font-bold text-foreground normal-case tracking-normal">JLPT Academic</h3>
+                  <p className="text-sm text-muted-foreground mt-1 normal-case tracking-normal font-normal">
+                    Persiapan ujian JLPT N5–N1
+                  </p>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setPath("jft_practical")}
+                  className={cn(
+                    "p-5 rounded-lg border-2 text-left transition-colors",
+                    path === "jft_practical"
+                      ? "border-primary/35 bg-card"
+                      : "border-border hover:border-primary/20",
+                  )}
+                >
+                  <span className="nori-jp-display text-2xl block mb-2">会話</span>
+                  <h3 className="font-bold text-foreground normal-case tracking-normal">JFT Practical</h3>
+                  <p className="text-sm text-muted-foreground mt-1 normal-case tracking-normal font-normal">
+                    Bahasa Jepang praktis sehari-hari
+                  </p>
+                </button>
+              </div>
+
+              <Button className="w-full h-12" onClick={() => setStep(1)}>
+                Lanjut
+              </Button>
+            </div>
+          )}
+
+          {step === 1 && (
+            <div className="space-y-6">
+              <div className="text-center space-y-2">
+                <p className="nori-jp-display text-3xl">目標</p>
+                <div className="nori-wavy-line mx-auto" />
+                <h1 className="text-xl font-bold uppercase tracking-wide text-foreground mt-4">Target Harian</h1>
+                <p className="text-muted-foreground normal-case tracking-normal font-normal text-sm">
+                  Berapa banyak Anda ingin belajar setiap hari?
+                </p>
+              </div>
+
+              <div className="space-y-6 py-4">
+                <div className="text-center">
+                  <span className="text-5xl font-bold text-primary">{dailyXp}</span>
+                  <span className="text-xl text-muted-foreground ml-2 normal-case">XP</span>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <button
-                    onClick={() => setPath("jlpt_academic")}
-                    className={`p-6 rounded-xl border-2 text-left transition-all duration-200 hover:shadow-md ${
-                      path === "jlpt_academic"
-                        ? "border-[hsl(var(--jlpt))] bg-[hsl(var(--jlpt-muted))]"
-                        : "border-border hover:border-[hsl(var(--jlpt))/50]"
-                    }`}
-                  >
-                    <span className="text-3xl mb-3 block">📚</span>
-                    <h3 className="font-bold text-foreground text-lg">JLPT Academic</h3>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Persiapan ujian JLPT N5–N1
-                    </p>
-                  </button>
+                <Slider
+                  value={[dailyXp]}
+                  onValueChange={(v) => setDailyXp(v[0])}
+                  min={10}
+                  max={200}
+                  step={10}
+                  className="py-4"
+                />
 
-                  <button
-                    onClick={() => setPath("jft_practical")}
-                    className={`p-6 rounded-xl border-2 text-left transition-all duration-200 hover:shadow-md ${
-                      path === "jft_practical"
-                        ? "border-[hsl(var(--jft))] bg-[hsl(var(--jft-muted))]"
-                        : "border-border hover:border-[hsl(var(--jft))/50]"
-                    }`}
-                  >
-                    <span className="text-3xl mb-3 block">💬</span>
-                    <h3 className="font-bold text-foreground text-lg">JFT Practical</h3>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Bahasa Jepang praktis sehari-hari
-                    </p>
-                  </button>
+                <div className="text-center p-4 rounded-lg border border-border bg-card">
+                  <p className="text-muted-foreground normal-case tracking-normal font-normal">
+                    ≈ <span className="font-bold text-foreground">{minutesEstimate} menit</span> per hari
+                  </p>
                 </div>
+              </div>
 
-                <Button className="w-full h-12" onClick={() => setStep(1)}>
+              <div className="flex gap-3">
+                <Button variant="outline" className="flex-1 h-12" onClick={() => setStep(0)}>
+                  Kembali
+                </Button>
+                <Button className="flex-1 h-12" onClick={() => setStep(2)}>
                   Lanjut
                 </Button>
-              </motion.div>
-            )}
+              </div>
+            </div>
+          )}
 
-            {step === 1 && (
-              <motion.div
-                key="step1"
-                variants={stepVariants}
-                initial="enter"
-                animate="center"
-                exit="exit"
-                transition={{ duration: 0.3 }}
-                className="space-y-6"
-              >
-                <div className="text-center space-y-2">
-                  <h1 className="text-2xl font-bold text-foreground">Target Harian</h1>
-                  <p className="text-muted-foreground">Berapa banyak Anda ingin belajar setiap hari?</p>
-                </div>
+          {step === 2 && (
+            <div className="space-y-6">
+              <div className="text-center space-y-2">
+                <p className="nori-jp-display text-3xl">レベル</p>
+                <div className="nori-wavy-line mx-auto" />
+                <h1 className="text-xl font-bold uppercase tracking-wide text-foreground mt-4">Level Saat Ini</h1>
+                <p className="text-muted-foreground normal-case tracking-normal font-normal text-sm">
+                  Di mana Anda sekarang?
+                </p>
+              </div>
 
-                <div className="space-y-8 py-4">
-                  <div className="text-center">
-                    <span className="text-5xl font-bold text-primary">{dailyXp}</span>
-                    <span className="text-2xl text-muted-foreground ml-2">XP</span>
-                  </div>
+              <div className="grid grid-cols-2 gap-3">
+                {LEVELS.map((l) => (
+                  <button
+                    key={l.value}
+                    type="button"
+                    onClick={() => setLevel(l.value)}
+                    className={cn(
+                      "p-4 rounded-lg border-2 text-left transition-colors",
+                      level === l.value
+                        ? "border-primary/35 bg-card"
+                        : "border-border hover:border-primary/20",
+                    )}
+                  >
+                    <p className="font-bold text-foreground normal-case tracking-normal">{l.label}</p>
+                    <p className="text-xs text-muted-foreground normal-case tracking-normal font-normal">{l.desc}</p>
+                  </button>
+                ))}
+              </div>
 
-                  <Slider
-                    value={[dailyXp]}
-                    onValueChange={(v) => setDailyXp(v[0])}
-                    min={10}
-                    max={200}
-                    step={10}
-                    className="py-4"
-                  />
-
-                  <div className="text-center p-4 rounded-lg bg-[hsl(var(--warm-100))]">
-                    <p className="text-muted-foreground">
-                      ≈ <span className="font-bold text-foreground">{minutesEstimate} menit</span> per hari
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex gap-3">
-                  <Button variant="outline" className="flex-1 h-12" onClick={() => setStep(0)}>
-                    Kembali
-                  </Button>
-                  <Button className="flex-1 h-12" onClick={() => setStep(2)}>
-                    Lanjut
-                  </Button>
-                </div>
-              </motion.div>
-            )}
-
-            {step === 2 && (
-              <motion.div
-                key="step2"
-                variants={stepVariants}
-                initial="enter"
-                animate="center"
-                exit="exit"
-                transition={{ duration: 0.3 }}
-                className="space-y-6"
-              >
-                <div className="text-center space-y-2">
-                  <h1 className="text-2xl font-bold text-foreground">Level Saat Ini</h1>
-                  <p className="text-muted-foreground">Di mana Anda sekarang?</p>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  {LEVELS.map((l) => (
-                    <button
-                      key={l.value}
-                      onClick={() => setLevel(l.value)}
-                      className={`p-4 rounded-xl border-2 text-left transition-all duration-200 ${
-                        level === l.value
-                          ? "border-primary bg-primary/5"
-                          : "border-border hover:border-primary/30"
-                      }`}
-                    >
-                      <p className="font-bold text-foreground">{l.label}</p>
-                      <p className="text-xs text-muted-foreground">{l.desc}</p>
-                    </button>
-                  ))}
-                </div>
-
-                <div className="flex gap-3">
-                  <Button variant="outline" className="flex-1 h-12" onClick={() => setStep(1)}>
-                    Kembali
-                  </Button>
-                  <Button className="flex-1 h-12" onClick={handleFinish} disabled={loading}>
-                    {loading ? "Menyimpan..." : "Mulai Belajar 🚀"}
-                  </Button>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
+              <div className="flex gap-3">
+                <Button variant="outline" className="flex-1 h-12" onClick={() => setStep(1)}>
+                  Kembali
+                </Button>
+                <Button className="flex-1 h-12" onClick={handleFinish} disabled={loading}>
+                  {loading ? "Menyimpan..." : "Mulai Belajar"}
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
-      </motion.div>
+      </div>
     </div>
   );
 };

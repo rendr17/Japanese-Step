@@ -154,7 +154,7 @@ const DeckList = ({ onStudyDeck }: DeckListProps) => {
     return (
       <div className="space-y-2">
         {[1, 2, 3].map((i) => (
-          <div key={i} className="zen-card h-14 animate-pulse bg-muted/50" />
+          <div key={i} className="nori-card h-14 animate-pulse bg-muted/50" />
         ))}
       </div>
     );

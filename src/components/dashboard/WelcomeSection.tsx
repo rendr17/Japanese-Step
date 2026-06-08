@@ -1,5 +1,10 @@
-import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
+import { ArrowRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
 import { useProfile } from "@/hooks/useDashboardData";
+import { useTodayXP } from "@/hooks/useDailyXP";
+import LearningIllustration from "@/assets/LearningIllustration";
 
 const getJapaneseGreeting = () => {
   const h = new Date().getHours();
@@ -16,34 +21,31 @@ const getJapaneseDate = () => {
 
 const WelcomeSection = () => {
   const { data: profile } = useProfile();
+  const navigate = useNavigate();
   const name = profile?.display_name || "Learner";
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3, ease: "easeOut" }}
-      className="mb-8"
-    >
-      <div className="flex items-center gap-2">
-        <h1 className="text-3xl font-serif font-bold text-foreground">
-          {getJapaneseGreeting()}, {name}!
+    <div className="mb-10 grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+      <div>
+        <p className="nori-jp-display text-5xl sm:text-6xl mb-3">学習</p>
+        <div className="nori-wavy-line mb-6" />
+        <h1 className="text-2xl sm:text-3xl font-bold uppercase tracking-wide text-foreground leading-tight mb-3">
+          {getJapaneseGreeting()}, {name} —{" "}
+          <span className="text-primary">Keep Learning</span> Every Day
         </h1>
-        <motion.span
-          animate={{ rotate: [0, 14, -8, 14, -4, 10, 0] }}
-          transition={{ duration: 1.5, delay: 0.5 }}
-          className="text-3xl inline-block origin-[70%_70%]"
-        >
-          👋
-        </motion.span>
+        <p className="text-muted-foreground normal-case tracking-normal font-normal text-sm mb-2 max-w-md">
+          Platform belajar bahasa Jepang dengan materi JLPT, latihan interaktif, dan bantuan AI sensei.
+        </p>
+        <p className="text-sm text-muted-foreground font-jp mb-6">{getJapaneseDate()}</p>
+        <Button className="gap-2" onClick={() => navigate("/learn")}>
+          Mulai Belajar
+          <ArrowRight size={16} />
+        </Button>
       </div>
-      <div className="flex items-center gap-4 mt-2">
-        <span className="text-sm text-muted-foreground font-jp">{getJapaneseDate()}</span>
-        <span className="text-sm font-medium text-accent flex items-center gap-1">
-          🔥 {profile ? "学習を続けよう" : "始めましょう"}
-        </span>
+      <div className="hidden sm:flex justify-center lg:justify-end">
+        <LearningIllustration className="w-full max-w-xs lg:max-w-sm" />
       </div>
-    </motion.div>
+    </div>
   );
 };
 

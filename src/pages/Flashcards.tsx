@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { motion } from "framer-motion";
 import { useFlashcardSession } from "@/hooks/useFlashcards";
 import FlashcardCard from "@/components/flashcard/FlashcardCard";
@@ -16,14 +16,26 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Clock, Layers, Target, Settings2, BookOpen, Wrench, LayoutList } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { supabase } from "@/integrations/supabase/client";
+import { useAddXP } from "@/hooks/useDailyXP";
+import { useSettings } from "@/hooks/useSettings";
+import { useStudySession } from "@/hooks/useStudySession";
+import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 const isJapaneseMeaning = (text: string) =>
   /^[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FFF\s・ーっ、。]+$/.test(text.trim());
 
 const Flashcards = () => {
+  const queryClient = useQueryClient();
+  const addXP = useAddXP();
+  const { settings } = useSettings();
+  const { startSession, endSession } = useStudySession();
+  const xpSavedRef = useRef(false);
+  const sessionStartedRef = useRef(false);
   const [maxCards, setMaxCards] = useState(20);
-  const [showFurigana, setShowFurigana] = useState<"always" | "hover" | "never">("hover");
+  const [showFurigana, setShowFurigana] = useState<"always" | "hover" | "never">(
+    (settings.furigana_display as "always" | "hover" | "never") || "always"
+  );
   const [autoPlayAudio, setAutoPlayAudio] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [isFixing, setIsFixing] = useState(false);
@@ -31,6 +43,13 @@ const Flashcards = () => {
   const [isFixingKana, setIsFixingKana] = useState(false);
   const [activeTab, setActiveTab] = useState<"review" | "decks">("review");
   const [studyingDeck, setStudyingDeck] = useState<string | null>(null);
+
+  useEffect(() => {
+    const mode = settings.furigana_display as "always" | "hover" | "never";
+    if (mode === "always" || mode === "hover" || mode === "never") {
+      setShowFurigana(mode);
+    }
+  }, [settings.furigana_display]);
 
   const handleFixBadMeanings = useCallback(async () => {
     setIsFixing(true);
@@ -55,7 +74,8 @@ const Flashcards = () => {
       toast.info(`Memperbaiki ${badEntries.length} kosakata...`);
 
       let fixed = 0;
-      for (const entry of badEntries) {
+      for (let i = 0; i < badEntries.length; i++) {
+        const entry = badEntries[i];
         try {
           const { data, error: fnError } = await supabase.functions.invoke("vocab-ai-fill", {
             body: { kanji: entry.kanji || entry.kana },
@@ -67,17 +87,18 @@ const Flashcards = () => {
         } catch {
           // skip individual failures
         }
-        setFixProgress({ done: fixed, total: badEntries.length });
+        setFixProgress({ done: i + 1, total: badEntries.length });
       }
 
       toast.success(`${fixed} dari ${badEntries.length} arti berhasil diperbaiki!`);
-      window.location.reload();
+      queryClient.invalidateQueries({ queryKey: ["flashcard-due-cards"] });
+      queryClient.invalidateQueries({ queryKey: ["vocabulary-simple"] });
     } catch (e) {
       toast.error("Gagal memperbaiki data");
     } finally {
       setIsFixing(false);
     }
-  }, []);
+  }, [queryClient]);
 
   const handleFixBadKana = useCallback(async () => {
     setIsFixingKana(true);
@@ -96,14 +117,15 @@ const Flashcards = () => {
         toast.success("Semua kana sudah benar! ✓");
       } else {
         toast.success(`${data.fixed} dari ${data.total} kana berhasil diperbaiki!`);
-        window.location.reload();
+        queryClient.invalidateQueries({ queryKey: ["flashcard-due-cards"] });
+        queryClient.invalidateQueries({ queryKey: ["vocabulary-simple"] });
       }
     } catch (e) {
       toast.error("Gagal memperbaiki kana");
     } finally {
       setIsFixingKana(false);
     }
-  }, []);
+  }, [queryClient]);
 
   const {
     currentCard,
@@ -118,6 +140,33 @@ const Flashcards = () => {
     isReviewing,
     totalCards,
   } = useFlashcardSession(maxCards);
+
+  // Start study session when reviewing
+  useEffect(() => {
+    const isReviewing = activeTab === "review" || studyingDeck !== null;
+    if (isReviewing && !sessionStartedRef.current && !isComplete && totalCards > 0) {
+      sessionStartedRef.current = true;
+      startSession("flashcard");
+    }
+    if (!isReviewing || isComplete) {
+      sessionStartedRef.current = false;
+    }
+  }, [activeTab, studyingDeck, isComplete, totalCards, startSession]);
+
+  // Persist XP when a review session completes
+  useEffect(() => {
+    if (isComplete && !xpSavedRef.current && sessionStats.reviewed > 0) {
+      xpSavedRef.current = true;
+      const xp = sessionStats.correct * 10 + sessionStats.incorrect * 2;
+      if (xp > 0) {
+        addXP.mutate({ xp, activityType: "flashcard" });
+      }
+      endSession(xp);
+    }
+    if (!isComplete) {
+      xpSavedRef.current = false;
+    }
+  }, [isComplete, sessionStats, addXP, endSession]);
 
   const timeSpent = Math.round((Date.now() - sessionStats.startTime) / 60000);
   const progressPercent = totalCards > 0 ? (sessionStats.reviewed / totalCards) * 100 : 0;
@@ -275,7 +324,7 @@ const Flashcards = () => {
           <motion.div
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
-            className="zen-card p-4 space-y-4"
+            className="nori-card p-4 space-y-4"
           >
             <div className="space-y-2">
               <Label className="text-sm">Maks kartu per sesi: {maxCards}</Label>
@@ -324,21 +373,21 @@ const Flashcards = () => {
           ) : (
             <>
               <div className="grid grid-cols-3 gap-3">
-                <div className="zen-card p-3 flex items-center gap-2">
+                <div className="nori-card p-3 flex items-center gap-2">
                   <Layers size={16} className="text-primary" />
                   <div>
                     <p className="text-xs text-muted-foreground">Total</p>
                     <p className="text-lg font-bold text-foreground">{totalCards}</p>
                   </div>
                 </div>
-                <div className="zen-card p-3 flex items-center gap-2">
+                <div className="nori-card p-3 flex items-center gap-2">
                   <Target size={16} className="text-secondary" />
                   <div>
                     <p className="text-xs text-muted-foreground">Sisa</p>
                     <p className="text-lg font-bold text-foreground">{totalCards - sessionStats.reviewed}</p>
                   </div>
                 </div>
-                <div className="zen-card p-3 flex items-center gap-2">
+                <div className="nori-card p-3 flex items-center gap-2">
                   <Clock size={16} className="text-accent" />
                   <div>
                     <p className="text-xs text-muted-foreground">Waktu</p>
@@ -380,7 +429,7 @@ const Flashcards = () => {
 
         {/* Decks tab */}
         <TabsContent value="decks" className="mt-4">
-          <div className="zen-card overflow-hidden">
+          <div className="nori-card overflow-hidden">
             <DeckList onStudyDeck={(tag) => setStudyingDeck(tag)} />
           </div>
         </TabsContent>

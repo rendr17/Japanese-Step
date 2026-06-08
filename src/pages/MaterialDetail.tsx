@@ -3,9 +3,9 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   ArrowLeft, Pencil, Star, Share2, Trash2,
-  Minus, Plus, Clock, BookOpen, FileText, MessageCircle, Languages,
+  Minus, Plus, Clock, BookOpen, FileText, MessageCircle, Languages, CheckCircle2,
+  Layers, Bot, Highlighter,
 } from "lucide-react";
-import * as wanakana from "wanakana";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -17,20 +17,22 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useMaterialDetail, useRelatedMaterials } from "@/hooks/useMaterialDetail";
 import MaterialSupplementary from "@/components/material/MaterialSupplementary";
+import MaterialQuiz from "@/components/material/MaterialQuiz";
 import { useToggleFavorite, useDeleteMaterial } from "@/hooks/useMaterials";
+import {
+  useMaterialProgress,
+  useUpdateMaterialProgress,
+  useGenerateLessonQuiz,
+  useSubmitQuizAttempt,
+} from "@/hooks/useMaterialProgress";
+import { useAddXP } from "@/hooks/useDailyXP";
+import { useStudySession } from "@/hooks/useStudySession";
+import { useSettings } from "@/hooks/useSettings";
+import type { QuizQuestion } from "@/hooks/useMaterialProgress";
 import { toast } from "sonner";
-import { generateHTML } from "@tiptap/react";
-import StarterKit from "@tiptap/starter-kit";
-import Underline from "@tiptap/extension-underline";
-import LinkExtension from "@tiptap/extension-link";
-import ImageExt from "@tiptap/extension-image";
-
-const extensions = [
-  StarterKit.configure({ heading: { levels: [1, 2, 3] } }),
-  Underline,
-  LinkExtension,
-  ImageExt,
-];
+import { getFuriganaCss, type FuriganaDisplayMode } from "@/lib/furigana";
+import { jsonToHtml, htmlToRomaji } from "@/lib/tiptapHtml";
+import { useEnrichedHtml } from "@/hooks/useEnrichedHtml";
 
 const categoryConfig: Record<string, { icon: React.ReactNode; label: string; color: string }> = {
   grammar: { icon: <FileText size={14} />, label: "Grammar", color: "bg-jlpt text-jlpt-foreground" },
@@ -52,104 +54,30 @@ function jsonToPlainText(json: any): string {
   return "";
 }
 
-function jsonToHtml(json: any): string {
-  if (!json) return "";
-  try {
-    let html = generateHTML(json, extensions);
-    html = html
-      .replace(/&lt;ruby&gt;/g, "<ruby>").replace(/&lt;\/ruby&gt;/g, "</ruby>")
-      .replace(/&lt;rt&gt;/g, "<rt>").replace(/&lt;\/rt&gt;/g, "</rt>")
-      .replace(/&lt;rp&gt;/g, "<rp>").replace(/&lt;\/rp&gt;/g, "</rp>");
-    return html;
-  } catch {
-    return typeof json === "string" ? json : "<p>Konten tidak dapat ditampilkan.</p>";
-  }
-}
-
-const JP_PUNCT_MAP: Record<string, string> = {
-  "。": ". ", "、": ", ", "？": "? ", "！": "! ",
-  "…": "...", "「": '"', "」": '"', "『": "'", "』": "'",
-  "・": " ", "〜": "~", "：": ": ", "；": "; ",
-};
-
-function textToRomaji(text: string): string {
-  // Tokenize to separate hiragana/katakana chunks from punctuation and other chars
-  const tokens: Array<{ type: string; value: string }> = (wanakana as any).tokenize(text, { detailed: true }) ?? [];
-  const parts: string[] = [];
-
-  for (const token of tokens) {
-    const val: string = token.value ?? String(token);
-    const type: string = token.type ?? "";
-
-    if (type === "hiragana" || type === "katakana") {
-      parts.push(wanakana.toRomaji(val));
-    } else if (type === "ja_punctuation") {
-      let converted = "";
-      for (const ch of val) converted += JP_PUNCT_MAP[ch] ?? wanakana.toRomaji(ch);
-      // trim trailing space added above — the join will add one
-      parts.push(converted.trimEnd());
-    } else {
-      // kanji (shouldn't remain if ruby handled), romaji, or other — pass through
-      parts.push(val);
-    }
-  }
-
-  let result = parts.join(" ");
-  // Fix punctuation spacing: remove space before punctuation that follows a word
-  result = result.replace(/\s+([.,!?:;"])/g, "$1");
-  // Collapse multiple spaces
-  result = result.replace(/\s{2,}/g, " ").trim();
-  return result;
-}
-
-function htmlToRomaji(html: string): string {
-  const parser = new DOMParser();
-  const doc = parser.parseFromString(html, "text/html");
-
-  // Replace <ruby> elements: use the <rt> (furigana reading) text, discard kanji base
-  doc.querySelectorAll("ruby").forEach((ruby) => {
-    const rt = ruby.querySelector("rt");
-    const reading = rt?.textContent?.trim() ?? "";
-    // Replace entire ruby element with a text node of the reading
-    const textNode = doc.createTextNode(reading ? reading + " " : "");
-    ruby.replaceWith(textNode);
-  });
-
-  // Walk remaining text nodes and convert kana → romaji with proper spacing
-  const walk = (node: Node) => {
-    if (node.nodeType === Node.TEXT_NODE && node.textContent) {
-      node.textContent = textToRomaji(node.textContent);
-    } else {
-      const tag = (node as Element).tagName;
-      if (tag === "RT" || tag === "RP") { node.textContent = ""; return; }
-      node.childNodes.forEach(walk);
-    }
-  };
-  doc.body.childNodes.forEach(walk);
-  return doc.body.innerHTML;
-}
-
 // ---------- Selection Toolbar ----------
 const SelectionToolbar = ({ position, onClose }: { position: { x: number; y: number }; onClose: () => void }) => (
   <motion.div
     initial={{ opacity: 0, y: 6 }}
     animate={{ opacity: 1, y: 0 }}
     exit={{ opacity: 0 }}
-    className="fixed z-50 flex items-center gap-1 rounded-lg border border-border bg-popover p-1 shadow-lg"
+    className="fixed z-50 flex items-center gap-0.5 rounded-full border border-border bg-popover px-2 py-1 shadow-md"
     style={{ left: position.x, top: position.y }}
   >
-    <Button variant="ghost" size="sm" className="h-7 text-xs gap-1.5" onClick={() => { toast.info("Fitur Flashcard segera hadir"); onClose(); }}>
-      📇 Flashcard
+    <Button variant="ghost" size="sm" className="h-7 text-xs gap-1.5 rounded-full normal-case tracking-normal font-medium" onClick={() => { toast.info("Fitur Flashcard segera hadir"); onClose(); }}>
+      <Layers size={14} className="text-primary" strokeWidth={1.75} />
+      Flashcard
     </Button>
-    <Button variant="ghost" size="sm" className="h-7 text-xs gap-1.5" onClick={() => {
+    <Button variant="ghost" size="sm" className="h-7 text-xs gap-1.5 rounded-full normal-case tracking-normal font-medium" onClick={() => {
       const sel = window.getSelection()?.toString().trim();
       if (sel) window.location.href = `/ai-tools/analyzer?q=${encodeURIComponent(sel)}`;
       onClose();
     }}>
-      🤖 Analyze
+      <Bot size={14} className="text-primary" strokeWidth={1.75} />
+      Analyze
     </Button>
-    <Button variant="ghost" size="sm" className="h-7 text-xs gap-1.5" onClick={() => { toast.info("Fitur Highlight segera hadir"); onClose(); }}>
-      🖍️ Highlight
+    <Button variant="ghost" size="sm" className="h-7 text-xs gap-1.5 rounded-full normal-case tracking-normal font-medium" onClick={() => { toast.info("Fitur Highlight segera hadir"); onClose(); }}>
+      <Highlighter size={14} className="text-primary" strokeWidth={1.75} />
+      Highlight
     </Button>
   </motion.div>
 );
@@ -158,7 +86,7 @@ const SelectionToolbar = ({ position, onClose }: { position: { x: number; y: num
 const RelatedCard = ({ material }: { material: any }) => {
   const cfg = categoryConfig[material.category] ?? categoryConfig.grammar;
   return (
-    <Link to={`/materials/${material.id}`} className="zen-card hover-lift block p-4">
+    <Link to={`/materials/${material.id}`} className="nori-card block p-4">
       <div className="flex items-center gap-2 mb-2">
         <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium ${cfg.color}`}>
           {cfg.icon} {cfg.label}
@@ -178,15 +106,36 @@ const MaterialDetail = () => {
   const { data: related } = useRelatedMaterials(material);
   const toggleFav = useToggleFavorite();
   const deleteMat = useDeleteMaterial();
+  const { settings } = useSettings();
 
   // ── All hooks must be declared unconditionally before any early return ──
-  const [showFurigana, setShowFurigana] = useState(true);
+  const profileFurigana = (settings.furigana_display as FuriganaDisplayMode) || "always";
+  const [showFurigana, setShowFurigana] = useState(profileFurigana !== "never");
+  const [furiganaMode, setFuriganaMode] = useState<FuriganaDisplayMode>(
+    profileFurigana === "never" ? "always" : profileFurigana
+  );
   const [showRomaji, setShowRomaji] = useState(false);
   const [fontSize, setFontSize] = useState(18);
   const [readProgress, setReadProgress] = useState(0);
   const [selToolbar, setSelToolbar] = useState<{ x: number; y: number } | null>(null);
+  const [showQuiz, setShowQuiz] = useState(false);
+  const [quizQuestions, setQuizQuestions] = useState<QuizQuestion[]>([]);
+
+  const { data: materialProgress } = useMaterialProgress(id);
+  const updateProgress = useUpdateMaterialProgress();
+  const generateQuiz = useGenerateLessonQuiz();
+  const submitQuiz = useSubmitQuizAttempt();
+  const addXP = useAddXP();
+  const { startSession, endSession } = useStudySession();
+  const progressSaveRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const contentRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const mode = (settings.furigana_display as FuriganaDisplayMode) || "always";
+    setShowFurigana(mode !== "never");
+    setFuriganaMode(mode === "never" ? "always" : mode);
+  }, [settings.furigana_display]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -196,12 +145,23 @@ const MaterialDetail = () => {
       const total = el.scrollHeight - window.innerHeight;
       if (total <= 0) { setReadProgress(100); return; }
       const scrolled = Math.max(0, -rect.top);
-      setReadProgress(Math.min(100, (scrolled / total) * 100));
+      const pct = Math.min(100, (scrolled / total) * 100);
+      setReadProgress(pct);
+
+      if (material?.id && pct > 0) {
+        if (progressSaveRef.current) clearTimeout(progressSaveRef.current);
+        progressSaveRef.current = setTimeout(() => {
+          updateProgress.mutate({ materialId: material.id, scrollProgress: pct });
+        }, 2000);
+      }
     };
     window.addEventListener("scroll", handleScroll, { passive: true });
     handleScroll();
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, [material]);
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      if (progressSaveRef.current) clearTimeout(progressSaveRef.current);
+    };
+  }, [material?.id, updateProgress]);
 
   const handleMouseUp = useCallback(() => {
     const sel = window.getSelection();
@@ -211,8 +171,27 @@ const MaterialDetail = () => {
     setSelToolbar({ x: rect.left + rect.width / 2 - 100, y: rect.top - 44 });
   }, []);
 
-  const rawHtml = useMemo(() => jsonToHtml(material?.content ?? null), [material?.content]);
-  const html = useMemo(() => showRomaji ? htmlToRomaji(rawHtml) : rawHtml, [rawHtml, showRomaji]);
+  const materialVocabulary = useMemo(
+    () => (material?.vocabulary as Array<{ kanji?: string; kana: string }> | null) ?? null,
+    [material?.vocabulary]
+  );
+
+  const rawHtml = useMemo(
+    () => jsonToHtml(material?.content ?? null, {
+      vocabulary: materialVocabulary?.map((v) => ({
+        kanji: v.kanji ?? "",
+        kana: v.kana,
+      })),
+    }),
+    [material?.content, materialVocabulary]
+  );
+
+  const furiganaEnabled = showFurigana && !showRomaji;
+  const { html: enrichedHtml, isEnriching } = useEnrichedHtml(rawHtml, furiganaEnabled);
+  const html = useMemo(
+    () => (showRomaji ? htmlToRomaji(enrichedHtml) : enrichedHtml),
+    [enrichedHtml, showRomaji]
+  );
 
   // ── Early returns after all hooks ──
   if (isLoading) {
@@ -237,13 +216,62 @@ const MaterialDetail = () => {
   const plainText = jsonToPlainText(material.content);
   const readingTime = estimateReadingTime(plainText);
   const cfg = categoryConfig[material.category] ?? categoryConfig.grammar;
+  const isCompleted = !!(materialProgress as any)?.completed_at;
 
-  // CSS for furigana/romaji display
-  const readingStyle = showRomaji
-    ? "ruby { display: contents; } rt, rp { display: none; }"
-    : !showFurigana
-    ? "rt { display: none; }"
-    : "";
+  const handleStartQuiz = async () => {
+    setShowQuiz(true);
+    setQuizQuestions([]);
+    startSession("material_quiz");
+    try {
+      const questions = await generateQuiz.mutateAsync({
+        materialId: material.id,
+        title: material.title,
+        contentExcerpt: plainText.slice(0, 3000),
+        level: material.level,
+        category: material.category,
+      });
+      setQuizQuestions(questions);
+    } catch {
+      toast.error("Gagal membuat kuis");
+      setShowQuiz(false);
+    }
+  };
+
+  const handleQuizComplete = async (
+    score: number,
+    total: number,
+    answers: Array<{ questionIndex: number; selected: number; correct: boolean }>
+  ) => {
+    const pct = total > 0 ? score / total : 0;
+    const passed = pct >= 0.7;
+    const xpEarned = passed ? 30 + score * 5 : score * 3;
+
+    await submitQuiz.mutateAsync({
+      materialId: material.id,
+      score,
+      total,
+      answers,
+      passed,
+      xpEarned,
+    });
+
+    if (xpEarned > 0) {
+      addXP.mutate({ xp: xpEarned, activityType: "material_quiz" });
+      await endSession(xpEarned);
+    } else {
+      await endSession(0);
+    }
+
+    if (passed) toast.success("Materi selesai! +" + xpEarned + " XP");
+    else toast.info(`Skor ${Math.round(pct * 100)}%. Butuh 70% untuk menyelesaikan.`);
+  };
+
+  const activeFuriganaMode: FuriganaDisplayMode = showRomaji
+    ? "romaji"
+    : showFurigana
+    ? furiganaMode
+    : "never";
+  const readingStyle = getFuriganaCss(activeFuriganaMode);
 
   return (
     <>
@@ -335,7 +363,13 @@ const MaterialDetail = () => {
             <span className="text-xs text-muted-foreground">ふりがな</span>
             <Switch
               checked={showFurigana && !showRomaji}
-              onCheckedChange={(v) => { setShowFurigana(v); if (v) setShowRomaji(false); }}
+              onCheckedChange={(v) => {
+                setShowFurigana(v);
+                if (v) {
+                  setShowRomaji(false);
+                  setFuriganaMode((settings.furigana_display as FuriganaDisplayMode) || "always");
+                }
+              }}
               disabled={showRomaji}
             />
           </div>
@@ -355,13 +389,16 @@ const MaterialDetail = () => {
               <Plus size={14} />
             </Button>
           </div>
+          {isEnriching && (
+            <span className="text-[10px] text-muted-foreground">Memuat furigana...</span>
+          )}
         </div>
 
         {/* Content */}
         <div
           ref={contentRef}
           onMouseUp={handleMouseUp}
-          className="prose prose-sm max-w-none font-jp leading-[1.8]"
+          className={`prose prose-sm max-w-none font-jp leading-[1.8]${activeFuriganaMode === "hover" ? " furigana-hover" : ""}`}
           style={{ fontSize: `${fontSize}px` }}
         >
           {readingStyle && <style>{readingStyle}</style>}
@@ -389,7 +426,44 @@ const MaterialDetail = () => {
             </div>
           </section>
         )}
+
+        {/* Complete & Quiz CTA */}
+        <section className="mt-12 pt-8 border-t border-border">
+          {isCompleted ? (
+            <div className="nori-card p-6 text-center">
+              <CheckCircle2 className="h-10 w-10 text-secondary mx-auto mb-2" />
+              <p className="font-medium text-foreground">Materi selesai</p>
+              <p className="text-sm text-muted-foreground mb-4">Ulangi latihan untuk menguatkan ingatan</p>
+              <Button variant="outline" onClick={handleStartQuiz} disabled={generateQuiz.isPending}>
+                Ulangi Latihan
+              </Button>
+            </div>
+          ) : (
+            <div className="nori-card p-6 text-center space-y-3">
+              <p className="text-muted-foreground text-sm">
+                Progress baca: {Math.round(readProgress)}%
+                {(materialProgress as any)?.scroll_progress > 0 && ` (tersimpan: ${Math.round((materialProgress as any).scroll_progress)}%)`}
+              </p>
+              <Button size="lg" onClick={handleStartQuiz} disabled={generateQuiz.isPending} className="gap-2">
+                <BookOpen size={18} />
+                {generateQuiz.isPending ? "Menyiapkan..." : "Selesai & Latihan"}
+              </Button>
+              <p className="text-xs text-muted-foreground">5 soal MCQ dari AI · minimal 70% untuk selesai · +XP</p>
+            </div>
+          )}
+        </section>
       </motion.article>
+
+      {showQuiz && (
+        <div className="fixed inset-0 z-50 bg-foreground/20 flex items-center justify-center p-4 overflow-y-auto">
+          <MaterialQuiz
+            questions={quizQuestions}
+            isLoading={generateQuiz.isPending}
+            onComplete={handleQuizComplete}
+            onClose={() => setShowQuiz(false)}
+          />
+        </div>
+      )}
     </>
   );
 };

@@ -1,73 +1,77 @@
-import { motion } from "framer-motion";
+import { Link } from "react-router-dom";
 import { BookOpen, MessageCircle, FileText, Languages } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useRecentMaterials } from "@/hooks/useDashboardData";
+import { formatJlptLevel } from "@/lib/levelLabels";
+import { cn } from "@/lib/utils";
 
 const categoryConfig: Record<string, { icon: React.ReactNode; label: string }> = {
-  grammar: { icon: <FileText size={16} />, label: "Grammar" },
-  reading: { icon: <BookOpen size={16} />, label: "Reading" },
-  conversation: { icon: <MessageCircle size={16} />, label: "Conversation" },
-  vocabulary: { icon: <Languages size={16} />, label: "Vocabulary" },
+  grammar: { icon: <FileText size={16} strokeWidth={1.75} />, label: "Grammar" },
+  reading: { icon: <BookOpen size={16} strokeWidth={1.75} />, label: "Reading" },
+  conversation: { icon: <MessageCircle size={16} strokeWidth={1.75} />, label: "Conversation" },
+  vocabulary: { icon: <Languages size={16} strokeWidth={1.75} />, label: "Vocabulary" },
+};
+
+const LevelBadge = ({ level }: { level: string }) => {
+  const { label, variant } = formatJlptLevel(level);
+  if (variant === "hidden") return null;
+  return (
+    <span className={cn("text-[10px] shrink-0", variant === "jlpt" ? "jlpt-badge" : "jft-badge")}>
+      {label}
+    </span>
+  );
 };
 
 const RecentMaterials = () => {
   const { data: materials = [] } = useRecentMaterials();
 
-  if (materials.length === 0) {
-    return (
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3, delay: 0.2 }}
-      >
-        <h2 className="text-xl font-serif font-semibold text-foreground mb-4">Materi Terakhir</h2>
-        <div className="zen-card text-center py-8">
-          <p className="text-muted-foreground text-sm">Belum ada materi. Mulai belajar sekarang!</p>
-        </div>
-      </motion.div>
-    );
-  }
-
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3, delay: 0.2 }}
-    >
-      <h2 className="text-xl font-serif font-semibold text-foreground mb-4">Materi Terakhir</h2>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {materials.map((mat, i) => {
-          const cfg = categoryConfig[mat.category] ?? categoryConfig.grammar;
-          return (
-            <motion.div
-              key={mat.id}
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, delay: 0.25 + i * 0.08 }}
-              className="zen-card hover-lift cursor-pointer group"
-            >
-              <div className="flex items-center gap-2 mb-3">
-                <div className="p-2 rounded-lg bg-muted text-foreground">
+    <div>
+      <p className="nori-jp-display text-2xl mb-1">教材</p>
+      <h2 className="nori-section-title mb-4">Materi Terakhir</h2>
+
+      {materials.length === 0 ? (
+        <div className="nori-card text-center py-8">
+          <p className="text-muted-foreground text-sm normal-case tracking-normal font-normal">
+            Belum ada materi. Mulai belajar sekarang!
+          </p>
+        </div>
+      ) : (
+        <div className="nori-card space-y-0 p-0 overflow-hidden">
+          {materials.map((mat) => {
+            const cfg = categoryConfig[mat.category] ?? categoryConfig.grammar;
+            return (
+              <Link
+                key={mat.id}
+                to={`/materials/${mat.id}`}
+                className={cn(
+                  "flex items-center gap-3 p-4 border-b border-border last:border-b-0",
+                  "hover:bg-muted transition-colors group",
+                )}
+              >
+                <div className="p-2 border border-border rounded-md text-foreground shrink-0">
                   {cfg.icon}
                 </div>
-                <Badge variant="secondary" className="text-[10px]">
-                  {cfg.label}
-                </Badge>
-                <Badge variant="outline" className="text-[10px] ml-auto">
-                  {mat.level.toUpperCase()}
-                </Badge>
-              </div>
-              <h4 className="font-medium text-sm text-foreground line-clamp-2 group-hover:text-primary transition-colors">
-                {mat.title}
-              </h4>
-              <p className="text-[10px] text-muted-foreground mt-2">
-                {new Date(mat.updated_at).toLocaleDateString("ja-JP")}
-              </p>
-            </motion.div>
-          );
-        })}
-      </div>
-    </motion.div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Badge variant="secondary" className="text-[10px]">
+                      {cfg.label}
+                    </Badge>
+                    <LevelBadge level={mat.level} />
+                  </div>
+                  <p className="font-medium text-sm text-foreground truncate normal-case tracking-normal group-hover:text-primary transition-colors">
+                    {mat.title}
+                  </p>
+                </div>
+                <p className="text-xs text-muted-foreground shrink-0 normal-case">
+                  {new Date(mat.updated_at).toLocaleDateString("ja-JP")}
+                </p>
+              </Link>
+            );
+          })}
+        </div>
+      )}
+    </div>
   );
 };
 

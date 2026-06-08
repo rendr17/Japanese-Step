@@ -14,11 +14,12 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ["Inter", "sans-serif"],
+        sans: ["Outfit", "sans-serif"],
         serif: ["Noto Serif JP", "serif"],
         jp: ["Noto Sans JP", "sans-serif"],
       },
       colors: {
+        canvas: "hsl(var(--canvas))",
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
@@ -133,5 +134,5 @@ export default {
       },
     },
   },
-  plugins: [require("tailwindcss-animate")],
+  plugins: [require("tailwindcss-animate"), require("@tailwindcss/typography")],
 } satisfies Config;

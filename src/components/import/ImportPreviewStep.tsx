@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Pencil, Check, AlertTriangle, ChevronRight } from "lucide-react";
+import { Pencil, Check, AlertTriangle, ChevronRight, BookMarked, FileText, Landmark, GraduationCap } from "lucide-react";
+import SectionHeading from "@/components/ui/section-heading";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -92,7 +93,7 @@ const ImportPreviewStep = ({ analysis, setAnalysis, settings, setSettings, onNex
 
       {/* Sections */}
       <div className="space-y-3">
-        <h3 className="text-sm font-semibold">📚 Bagian Materi ({analysis.sections.length})</h3>
+        <SectionHeading icon={BookMarked} label="Bagian Materi" count={analysis.sections.length} />
         {analysis.sections.map((section, idx) => (
           <Card key={idx} className="p-4">
             <div className="flex items-center justify-between mb-2">
@@ -124,9 +125,9 @@ const ImportPreviewStep = ({ analysis, setAnalysis, settings, setSettings, onNex
 
       {/* Stats */}
       <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
-        <span>📝 {analysis.vocabulary.length} kosakata terdeteksi</span>
-        <span>📐 {analysis.grammar_notes.length} pola grammar</span>
-        {analysis.cultural_note && <span>🎌 Ada catatan budaya</span>}
+        <span className="flex items-center gap-1.5"><BookMarked size={14} className="text-primary" strokeWidth={1.75} /> {analysis.vocabulary.length} kosakata terdeteksi</span>
+        <span className="flex items-center gap-1.5"><GraduationCap size={14} className="text-primary" strokeWidth={1.75} /> {analysis.grammar_notes.length} pola grammar</span>
+        {analysis.cultural_note && <span className="flex items-center gap-1.5"><Landmark size={14} className="text-primary" strokeWidth={1.75} /> Ada catatan budaya</span>}
       </div>
 
       <div className="flex gap-3">

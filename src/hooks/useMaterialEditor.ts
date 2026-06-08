@@ -93,15 +93,16 @@ export function useMaterialEditor(id?: string) {
     saveMutation.mutate({ meta, content });
   }, [meta, content, saveMutation]);
 
-  // Auto-save every 10 seconds if dirty
+  // Auto-save every 10 seconds for existing materials only (new materials need manual first save)
   useEffect(() => {
+    if (isNew) return;
     autoSaveTimer.current = setInterval(() => {
       if (isDirty && meta.title) {
         saveMutation.mutate({ meta, content });
       }
     }, 10_000);
     return () => clearInterval(autoSaveTimer.current);
-  }, [isDirty, meta, content]);
+  }, [isNew, isDirty, meta, content, saveMutation]);
 
   const updateMeta = useCallback((m: MaterialMeta) => {
     setMeta(m);
@@ -116,6 +117,7 @@ export function useMaterialEditor(id?: string) {
   return {
     meta,
     content,
+    vocabulary: (existing?.vocabulary as Array<{ kanji?: string; kana: string }> | null) ?? null,
     isLoading: !isNew && isLoading,
     isDirty,
     isSaving: saveMutation.isPending,

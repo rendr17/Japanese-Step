@@ -4,8 +4,9 @@ import { useAuth } from "@/contexts/AuthContext";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Sparkles, BookOpen, MessageCircle, GraduationCap, Save,
-  RefreshCw, FileText, ChevronDown, ChevronUp, Plus,
+  RefreshCw, FileText, ChevronDown, ChevronUp, Plus, BookMarked,
 } from "lucide-react";
+import SectionHeading from "@/components/ui/section-heading";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -21,7 +22,8 @@ import {
 } from "@/components/ui/table";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { supabase } from "@/integrations/supabase/client";
-
+import { normalizeFuriganaHtml } from "@/lib/furigana";
+import { htmlToTiptapJson } from "@/lib/tiptapHtml";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -53,101 +55,6 @@ const lengthOptions = [
   { value: "medium", label: "Sedang", chars: "~5000 karakter" },
   { value: "long", label: "Panjang", chars: "~8000 karakter" },
 ];
-
-/** Convert HTML string to a Tiptap-compatible JSON doc */
-function htmlToTiptapJson(html: string): any {
-  const parser = new DOMParser();
-  const doc = parser.parseFromString(`<body>${html}</body>`, "text/html");
-  const body = doc.body;
-
-  function parseNode(node: Node): any {
-    if (node.nodeType === Node.TEXT_NODE) {
-      const text = node.textContent || "";
-      if (!text) return null;
-      return { type: "text", text };
-    }
-
-    if (node.nodeType !== Node.ELEMENT_NODE) return null;
-    const el = node as HTMLElement;
-    const tag = el.tagName.toLowerCase();
-
-    const childContent = Array.from(el.childNodes)
-      .map(parseNode)
-      .filter(Boolean);
-
-    // Handle inline marks
-    if (tag === "strong" || tag === "b") {
-      return childContent.map((c: any) => ({
-        ...c,
-        marks: [...(c.marks || []), { type: "bold" }],
-      }));
-    }
-    if (tag === "em" || tag === "i") {
-      return childContent.map((c: any) => ({
-        ...c,
-        marks: [...(c.marks || []), { type: "italic" }],
-      }));
-    }
-    if (tag === "u") {
-      return childContent.map((c: any) => ({
-        ...c,
-        marks: [...(c.marks || []), { type: "underline" }],
-      }));
-    }
-
-    // Ruby tags: preserve as raw HTML text so generateHTML can render them
-    if (tag === "ruby") {
-      return { type: "text", text: el.outerHTML };
-    }
-
-    // Block elements
-    if (tag === "p") {
-      return { type: "paragraph", content: childContent.flat().length ? childContent.flat() : [{ type: "text", text: " " }] };
-    }
-    if (tag === "h1" || tag === "h2" || tag === "h3") {
-      const level = parseInt(tag[1]);
-      return { type: "heading", attrs: { level }, content: childContent.flat().length ? childContent.flat() : [{ type: "text", text: " " }] };
-    }
-    if (tag === "br") {
-      return { type: "hardBreak" };
-    }
-    if (tag === "ul" || tag === "ol") {
-      return { type: tag === "ul" ? "bulletList" : "orderedList", content: childContent.flat() };
-    }
-    if (tag === "li") {
-      // Wrap li children in a paragraph if they're inline
-      const hasBlock = childContent.flat().some((c: any) => ["paragraph", "heading", "bulletList", "orderedList"].includes(c?.type));
-      if (hasBlock) return { type: "listItem", content: childContent.flat() };
-      return { type: "listItem", content: [{ type: "paragraph", content: childContent.flat().length ? childContent.flat() : [{ type: "text", text: " " }] }] };
-    }
-    if (tag === "hr") {
-      return { type: "horizontalRule" };
-    }
-
-    // Fallback: wrap children in paragraph or return children directly
-    if (childContent.flat().length) return childContent.flat();
-    return null;
-  }
-
-  const content = Array.from(body.childNodes)
-    .map(parseNode)
-    .flat()
-    .filter(Boolean);
-
-  // Ensure all top-level nodes are block nodes
-  const blocks = content.map((node: any) => {
-    if (["paragraph", "heading", "bulletList", "orderedList", "horizontalRule", "listItem", "hardBreak"].includes(node?.type)) {
-      return node;
-    }
-    // Wrap inline content in a paragraph
-    return { type: "paragraph", content: [node] };
-  });
-
-  return {
-    type: "doc",
-    content: blocks.length ? blocks : [{ type: "paragraph", content: [{ type: "text", text: " " }] }],
-  };
-}
 
 const MaterialGenerator = () => {
   const navigate = useNavigate();
@@ -209,7 +116,7 @@ const MaterialGenerator = () => {
     };
 
     const htmlToSave = isEditing ? editingHtml : result.content_html;
-    const content = htmlToTiptapJson(htmlToSave);
+    const content = htmlToTiptapJson(normalizeFuriganaHtml(htmlToSave));
 
     const { error: err } = await supabase.from("materials").insert({
       title: result.title,
@@ -294,7 +201,7 @@ const MaterialGenerator = () => {
       <AnimatePresence>
         {showHistory && (
           <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="mb-6 overflow-hidden">
-            <div className="zen-card p-4 space-y-2 max-h-60 overflow-y-auto">
+            <div className="nori-card p-4 space-y-2 max-h-60 overflow-y-auto">
               <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">Riwayat Generate</h3>
               {history.map((item, i) => (
                 <button
@@ -315,7 +222,7 @@ const MaterialGenerator = () => {
       </AnimatePresence>
 
       {/* Form */}
-      <div className="zen-card p-5 mb-6 space-y-5">
+      <div className="nori-card p-5 mb-6 space-y-5">
         {/* Topic */}
         <div>
           <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Topik</label>
@@ -398,7 +305,7 @@ const MaterialGenerator = () => {
 
       {/* Error */}
       {error && (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="zen-card p-5 border-destructive/50 bg-destructive/5 text-destructive text-sm mb-6">
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="nori-card p-5 border-destructive/50 bg-destructive/5 text-destructive text-sm mb-6">
           {error}
         </motion.div>
       )}
@@ -415,7 +322,7 @@ const MaterialGenerator = () => {
             </div>
 
             {/* Content preview / editor */}
-            <div className="zen-card p-0 overflow-hidden">
+            <div className="nori-card p-0 overflow-hidden">
               <div className="px-5 py-3 border-b border-border flex items-center justify-between">
                 <h3 className="text-sm font-medium text-foreground">
                   {isEditing ? "Mode Edit" : "Preview"}
@@ -438,16 +345,18 @@ const MaterialGenerator = () => {
               ) : (
                 <div
                   className="p-5 prose prose-sm max-w-none font-jp leading-[1.8]"
-                  dangerouslySetInnerHTML={{ __html: isEditing ? editingHtml : result.content_html }}
+                  dangerouslySetInnerHTML={{
+                    __html: normalizeFuriganaHtml(isEditing ? editingHtml : result.content_html),
+                  }}
                 />
               )}
             </div>
 
             {/* Vocabulary */}
             {result.vocabulary.length > 0 && (
-              <div className="zen-card p-0 overflow-hidden">
+              <div className="nori-card p-0 overflow-hidden">
                 <div className="px-5 py-3 border-b border-border flex items-center justify-between">
-                  <h3 className="text-sm font-medium text-foreground">📚 Kosakata ({result.vocabulary.length})</h3>
+                  <SectionHeading icon={BookMarked} label="Kosakata" count={result.vocabulary.length} />
                   <Badge variant="secondary" className="text-[10px]">Auto-simpan saat simpan materi</Badge>
                 </div>
                 <Table>
@@ -474,7 +383,7 @@ const MaterialGenerator = () => {
             {/* Grammar notes */}
             {result.grammar_notes.length > 0 && (
               <Collapsible open={grammarOpen} onOpenChange={setGrammarOpen}>
-                <div className="zen-card p-5">
+                <div className="nori-card p-5">
                   <CollapsibleTrigger className="flex items-center justify-between w-full">
                     <h3 className="text-sm font-medium text-foreground flex items-center gap-2">
                       <GraduationCap size={16} className="text-primary" /> Catatan Grammar ({result.grammar_notes.length})
@@ -497,7 +406,7 @@ const MaterialGenerator = () => {
 
             {/* Cultural note */}
             {result.cultural_note && (
-              <div className="zen-card p-5">
+              <div className="nori-card p-5">
                 <h3 className="text-sm font-medium text-foreground flex items-center gap-2 mb-2">
                   🏯 Catatan Budaya
                 </h3>

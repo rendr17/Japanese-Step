@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
+import AuthLayout from "@/components/layout/AuthLayout";
 
 const getPasswordStrength = (password: string) => {
   let score = 0;
@@ -20,11 +20,11 @@ const getPasswordStrength = (password: string) => {
 };
 
 const strengthLabel = (score: number) => {
-  if (score <= 20) return { text: "Sangat Lemah", color: "bg-destructive" };
-  if (score <= 40) return { text: "Lemah", color: "bg-[hsl(var(--srs-alert))]" };
-  if (score <= 60) return { text: "Cukup", color: "bg-[hsl(var(--accent))]" };
-  if (score <= 80) return { text: "Kuat", color: "bg-[hsl(var(--jft))]" };
-  return { text: "Sangat Kuat", color: "bg-[hsl(var(--secondary))]" };
+  if (score <= 20) return "Sangat Lemah";
+  if (score <= 40) return "Lemah";
+  if (score <= 60) return "Cukup";
+  if (score <= 80) return "Kuat";
+  return "Sangat Kuat";
 };
 
 const Register = () => {
@@ -37,7 +37,6 @@ const Register = () => {
   const { toast } = useToast();
 
   const strength = getPasswordStrength(password);
-  const strengthInfo = strengthLabel(strength);
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,7 +49,7 @@ const Register = () => {
       return;
     }
     setLoading(true);
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -61,101 +60,100 @@ const Register = () => {
     setLoading(false);
     if (error) {
       toast({ title: "Registrasi gagal", description: error.message, variant: "destructive" });
-    } else {
-      toast({ title: "Berhasil!", description: "Silakan cek email untuk verifikasi." });
+    } else if (data.session) {
+      toast({ title: "Berhasil!", description: "Akun Anda siap digunakan." });
       navigate("/onboarding");
+    } else {
+      toast({ title: "Berhasil!", description: "Silakan cek email untuk verifikasi akun." });
+      navigate("/login");
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-[hsl(var(--warm-100))] to-[hsl(var(--jft-muted))] p-4">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, ease: "easeOut" }}
-        className="w-full max-w-md"
-      >
-        <div className="zen-card space-y-6">
-          <div className="text-center space-y-2">
-            <h1 className="text-3xl font-bold text-foreground">はじめまして</h1>
-            <p className="text-muted-foreground">Buat akun baru untuk mulai belajar</p>
-          </div>
-
-          <form onSubmit={handleRegister} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="displayName">Nama Tampilan</Label>
-              <Input
-                id="displayName"
-                placeholder="Nama Anda"
-                value={displayName}
-                onChange={(e) => setDisplayName(e.target.value)}
-                required
-                maxLength={100}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="anda@email.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                maxLength={255}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="Minimal 6 karakter"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
-              {password && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: "auto" }}
-                  className="space-y-1"
-                >
-                  <Progress value={strength} className={`h-2 [&>div]:${strengthInfo.color}`} />
-                  <p className="text-xs text-muted-foreground">
-                    Kekuatan: <span className="font-medium">{strengthInfo.text}</span>
-                  </p>
-                </motion.div>
-              )}
-            </div>
-
-            <div className="flex items-start gap-2">
-              <Checkbox
-                id="terms"
-                checked={agreed}
-                onCheckedChange={(v) => setAgreed(v === true)}
-              />
-              <Label htmlFor="terms" className="text-sm leading-relaxed cursor-pointer">
-                Saya setuju dengan{" "}
-                <span className="text-primary underline">Syarat & Ketentuan</span> dan{" "}
-                <span className="text-primary underline">Kebijakan Privasi</span>
-              </Label>
-            </div>
-
-            <Button type="submit" className="w-full h-12 text-base" disabled={loading || !agreed}>
-              {loading ? "Mendaftar..." : "Buat Akun"}
-            </Button>
-          </form>
-
-          <p className="text-center text-sm text-muted-foreground">
-            Sudah punya akun?{" "}
-            <Link to="/login" className="text-primary font-medium hover:underline">
-              Masuk di sini
-            </Link>
+    <AuthLayout
+      jpDisplay="はじめ"
+      headline="Start Your"
+      highlight="Japanese Journey"
+      description="Buat akun dan mulai belajar dengan materi JLPT, latihan interaktif, dan bantuan AI sensei."
+    >
+      <div className="nori-card space-y-6">
+        <div className="space-y-1">
+          <h2 className="text-2xl font-bold uppercase tracking-wide text-foreground">Daftar</h2>
+          <p className="text-muted-foreground normal-case tracking-normal font-normal text-sm">
+            Buat akun baru untuk mulai belajar
           </p>
         </div>
-      </motion.div>
-    </div>
+
+        <form onSubmit={handleRegister} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="displayName" className="normal-case tracking-normal font-medium">Nama Tampilan</Label>
+            <Input
+              id="displayName"
+              placeholder="Nama Anda"
+              value={displayName}
+              onChange={(e) => setDisplayName(e.target.value)}
+              required
+              maxLength={100}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="email" className="normal-case tracking-normal font-medium">Email</Label>
+            <Input
+              id="email"
+              type="email"
+              placeholder="anda@email.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              maxLength={255}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="password" className="normal-case tracking-normal font-medium">Password</Label>
+            <Input
+              id="password"
+              type="password"
+              placeholder="Minimal 6 karakter"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+            {password && (
+              <div className="space-y-1">
+                <Progress value={strength} className="h-1.5" />
+                <p className="text-xs text-muted-foreground normal-case tracking-normal">
+                  Kekuatan: <span className="font-medium text-foreground">{strengthLabel(strength)}</span>
+                </p>
+              </div>
+            )}
+          </div>
+
+          <div className="flex items-start gap-2">
+            <Checkbox
+              id="terms"
+              checked={agreed}
+              onCheckedChange={(v) => setAgreed(v === true)}
+            />
+            <Label htmlFor="terms" className="text-sm leading-relaxed cursor-pointer normal-case tracking-normal font-normal">
+              Saya setuju dengan{" "}
+              <span className="text-primary underline">Syarat & Ketentuan</span> dan{" "}
+              <span className="text-primary underline">Kebijakan Privasi</span>
+            </Label>
+          </div>
+
+          <Button type="submit" className="w-full h-12" disabled={loading || !agreed}>
+            {loading ? "Mendaftar..." : "Buat Akun"}
+          </Button>
+        </form>
+
+        <p className="text-center text-sm text-muted-foreground normal-case tracking-normal font-normal">
+          Sudah punya akun?{" "}
+          <Link to="/login" className="text-primary font-semibold hover:underline">
+            Masuk di sini
+          </Link>
+        </p>
+      </div>
+    </AuthLayout>
   );
 };
 

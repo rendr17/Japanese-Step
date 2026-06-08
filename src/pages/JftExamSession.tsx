@@ -19,6 +19,8 @@ import { useJftQuestions, JftQuestion, JFT_SECTIONS } from "@/hooks/useJftQuesti
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useStudySession } from "@/hooks/useStudySession";
+import { useAddXP } from "@/hooks/useDailyXP";
 
 const TOTAL_TIME = 60 * 60; // 60 minutes
 
@@ -32,6 +34,8 @@ const JftExamSession = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const { data: questions, isLoading } = useJftQuestions();
+  const { startSession, endSession } = useStudySession();
+  const addXP = useAddXP();
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<number, AnswerState>>({});
@@ -41,6 +45,7 @@ const JftExamSession = () => {
   const [showSubmitDialog, setShowSubmitDialog] = useState(false);
   const [showTimeWarning, setShowTimeWarning] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [highContrast, setHighContrast] = useState(false);
   const [largeFont, setLargeFont] = useState(true);
   const [showTranscript, setShowTranscript] = useState<Record<number, boolean>>({});
@@ -48,6 +53,56 @@ const JftExamSession = () => {
   const timeWarningShown = useRef(false);
   const startTime = useRef(Date.now());
   const pausedTime = useRef(0);
+  const handleSubmitRef = useRef<() => void>(() => {});
+
+  const handleSubmit = useCallback(async () => {
+    if (submitted || isSubmitting || !questions || !user) return;
+    setIsSubmitting(true);
+
+    const timeTaken = Math.round((Date.now() - startTime.current - pausedTime.current) / 1000);
+    let score = 0;
+    const answerData = questions.map((q, i) => {
+      const selected = answers[i]?.selected ?? null;
+      const correct = selected === q.correct_answer;
+      if (correct) score++;
+      return { question_id: q.id, selected, correct_answer: q.correct_answer, correct, section: q.section };
+    });
+
+    const { data, error } = await supabase.from("exam_results").insert({
+      user_id: user.id,
+      exam_type: "jft",
+      level: "basic",
+      score,
+      total_questions: questions.length,
+      answers: answerData,
+      time_taken_seconds: timeTaken,
+    }).select().single();
+
+    if (error) {
+      toast({ title: "Error", description: "Gagal menyimpan hasil", variant: "destructive" });
+      setIsSubmitting(false);
+      return;
+    }
+
+    const xp = Math.round((score / questions.length) * 50);
+    if (xp > 0) {
+      addXP.mutate({ xp, activityType: "exam" });
+    }
+    await endSession(xp);
+
+    setSubmitted(true);
+    navigate(`/exam/results/${data.id}`);
+  }, [submitted, isSubmitting, questions, answers, user, navigate, toast, addXP, endSession]);
+
+  useEffect(() => {
+    handleSubmitRef.current = () => { void handleSubmit(); };
+  }, [handleSubmit]);
+
+  useEffect(() => {
+    if (questions && questions.length > 0) {
+      startSession("exam_jft");
+    }
+  }, [questions, startSession]);
 
   // Timer
   useEffect(() => {
@@ -56,7 +111,7 @@ const JftExamSession = () => {
       setTimeLeft((prev) => {
         if (prev <= 1) {
           clearInterval(interval);
-          handleSubmit();
+          handleSubmitRef.current();
           return 0;
         }
         if (prev === 600 && !timeWarningShown.current) {
@@ -111,39 +166,9 @@ const JftExamSession = () => {
     toast({ title: "🔊 Audio diputar", description: `Putar ke-${plays + 1} dari 2` });
   }, [audioPlays, toast]);
 
-  const handleSubmit = useCallback(async () => {
-    if (submitted || !questions || !user) return;
-    setSubmitted(true);
-
-    const timeTaken = Math.round((Date.now() - startTime.current - pausedTime.current) / 1000);
-    let score = 0;
-    const answerData = questions.map((q, i) => {
-      const selected = answers[i]?.selected ?? null;
-      const correct = selected === q.correct_answer;
-      if (correct) score++;
-      return { question_id: q.id, selected, correct_answer: q.correct_answer, correct, section: q.section };
-    });
-
-    const { data, error } = await supabase.from("exam_results").insert({
-      user_id: user.id,
-      exam_type: "jft",
-      level: "basic",
-      score,
-      total_questions: questions.length,
-      answers: answerData,
-      time_taken_seconds: timeTaken,
-    }).select().single();
-
-    if (error) {
-      toast({ title: "Error", description: "Gagal menyimpan hasil", variant: "destructive" });
-      return;
-    }
-    navigate(`/exam/results/${data.id}`);
-  }, [submitted, questions, answers, user, navigate, toast]);
-
   if (isLoading || !questions) {
     return (
-      <div className="fixed inset-0 z-50 bg-background flex items-center justify-center">
+      <div className="fixed inset-0 z-50 bg-canvas flex items-center justify-center p-4">
         <div className="text-center space-y-3">
           <div className="w-8 h-8 border-2 border-t-transparent rounded-full animate-spin mx-auto" style={{ borderColor: "hsl(var(--jft))" }} />
           <p className="text-muted-foreground">Memuat soal JFT...</p>
@@ -164,7 +189,7 @@ const JftExamSession = () => {
   const fontSize = largeFont ? "text-lg sm:text-xl" : "text-base sm:text-lg";
 
   return (
-    <div className={`fixed inset-0 z-50 flex flex-col ${highContrast ? "bg-white text-black" : "bg-background"}`}>
+    <div className={`fixed inset-0 z-50 flex flex-col p-2 ${highContrast ? "bg-white text-black" : "bg-canvas"}`}>
       {/* Pause Overlay */}
       <AnimatePresence>
         {paused && (
@@ -450,7 +475,10 @@ const JftExamSession = () => {
                 <span className="flex items-center gap-1"><Flag size={14} className="text-accent" /> {flaggedCount} ditandai</span>
               </div>
               {answeredCount < questions.length && (
-                <p className="text-accent font-medium text-sm">⚠️ {questions.length - answeredCount} soal belum dijawab!</p>
+                <p className="text-accent font-medium text-sm flex items-center gap-1.5">
+                  <AlertTriangle size={14} strokeWidth={1.75} />
+                  {questions.length - answeredCount} soal belum dijawab!
+                </p>
               )}
             </AlertDialogDescription>
           </AlertDialogHeader>

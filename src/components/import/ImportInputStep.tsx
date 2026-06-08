@@ -150,10 +150,10 @@ const ImportInputStep = ({ rawText, setRawText, settings, setSettings, onAnalyze
           <Select value={settings.sourceCategory} onValueChange={(v) => setSettings({ ...settings, sourceCategory: v as any })}>
             <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="textbook">📖 Buku Pelajaran</SelectItem>
-              <SelectItem value="article">📰 Artikel / Reading</SelectItem>
-              <SelectItem value="dialogue">💬 Dialog Percakapan</SelectItem>
-              <SelectItem value="notes">📝 Catatan Pribadi</SelectItem>
+              <SelectItem value="textbook">Buku Pelajaran</SelectItem>
+              <SelectItem value="article">Artikel / Reading</SelectItem>
+              <SelectItem value="dialogue">Dialog Percakapan</SelectItem>
+              <SelectItem value="notes">Catatan Pribadi</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -174,8 +174,8 @@ const ImportInputStep = ({ rawText, setRawText, settings, setSettings, onAnalyze
           <Select value={settings.language} onValueChange={(v) => setSettings({ ...settings, language: v as any })}>
             <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="indonesian">🇮🇩 Indonesia</SelectItem>
-              <SelectItem value="english">🇬🇧 English</SelectItem>
+              <SelectItem value="indonesian">Indonesia</SelectItem>
+              <SelectItem value="english">English</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -185,8 +185,8 @@ const ImportInputStep = ({ rawText, setRawText, settings, setSettings, onAnalyze
           <Select value={settings.targetPath} onValueChange={(v) => setSettings({ ...settings, targetPath: v as any })}>
             <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="jlpt">🎌 JLPT</SelectItem>
-              <SelectItem value="jft">🏢 JFT</SelectItem>
+              <SelectItem value="jlpt">JLPT</SelectItem>
+              <SelectItem value="jft">JFT</SelectItem>
             </SelectContent>
           </Select>
         </div>

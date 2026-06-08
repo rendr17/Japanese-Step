@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Eye, EyeOff, Minus, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { getFuriganaCss } from "@/lib/furigana";
 
 interface ContentPreviewProps {
   html: string;
@@ -57,7 +58,7 @@ const ContentPreview = ({ html }: ContentPreviewProps) => {
         className="flex-1 overflow-y-auto p-4 prose prose-sm max-w-none font-jp"
         style={{ fontSize: `${fontSize}px` }}
       >
-        <style>{!showFurigana ? `rt { display: none; }` : ""}</style>
+        <style>{getFuriganaCss(showFurigana ? "always" : "never")}</style>
         <div dangerouslySetInnerHTML={{ __html: html }} />
       </div>
     </div>

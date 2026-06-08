@@ -19,13 +19,14 @@ import FuriganaModal from "@/components/editor/FuriganaModal";
 import MetadataSidebar from "@/components/editor/MetadataSidebar";
 import ContentPreview from "@/components/editor/ContentPreview";
 import { useMaterialEditor } from "@/hooks/useMaterialEditor";
+import { jsonToHtml } from "@/lib/tiptapHtml";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const MaterialEditor = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const {
-    meta, content, isLoading, isDirty, isSaving, save, updateMeta, updateContent, isNew,
+    meta, content, vocabulary, isLoading, isDirty, isSaving, save, updateMeta, updateContent, isNew,
   } = useMaterialEditor(id);
 
   const [furiganaOpen, setFuriganaOpen] = useState(false);
@@ -88,7 +89,11 @@ const MaterialEditor = () => {
     );
   }
 
-  const previewHtml = editor?.getHTML() ?? "";
+  const previewHtml = editor
+    ? jsonToHtml(editor.getJSON(), {
+        vocabulary: vocabulary?.map((v) => ({ kanji: v.kanji ?? "", kana: v.kana })),
+      })
+    : "";
 
   return (
     <motion.div

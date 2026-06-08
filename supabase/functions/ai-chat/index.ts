@@ -1,15 +1,15 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
+import { corsHeaders } from "../_shared/cors.ts";
+import { requireAuth } from "../_shared/auth.ts";
+import { chatCompletions } from "../_shared/ai.ts";
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
+    const authResult = await requireAuth(req);
+    if (authResult instanceof Response) return authResult;
+
     const { messages, userContext } = await req.json();
     if (!messages || !Array.isArray(messages)) {
       return new Response(JSON.stringify({ error: "Messages array is required" }), {
@@ -17,9 +17,6 @@ serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
     // Build context-aware system prompt
     const contextParts: string[] = [];
@@ -40,7 +37,7 @@ serve(async (req) => {
       ? `\n\nKonteks pengguna:\n${contextParts.map(p => `- ${p}`).join("\n")}\n\nGunakan konteks ini untuk mempersonalisasi jawaban. Sesuaikan tingkat kesulitan materi dengan level pengguna.`
       : "";
 
-    const systemPrompt = `Kamu adalah asisten belajar bahasa Jepang bernama "Sensei AI" untuk aplikasi Nihongo-Step. Kamu ahli dalam:
+    const systemPrompt = `Kamu adalah asisten belajar bahasa Jepang bernama "Sensei AI" untuk aplikasi Nihongo Step. Kamu ahli dalam:
 - Tata bahasa Jepang (grammar) dari N5 sampai N1
 - Etimologi dan mnemonik kanji
 - Latihan percakapan dan roleplay
@@ -57,20 +54,12 @@ Panduan:
 7. Jika pengguna membuat kesalahan, koreksi dengan lembut dan jelaskan alasannya
 8. Format jawaban dengan markdown untuk keterbacaan yang baik${contextBlock}`;
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
-        messages: [
-          { role: "system", content: systemPrompt },
-          ...messages,
-        ],
-        stream: true,
-      }),
+    const response = await chatCompletions({
+      messages: [
+        { role: "system", content: systemPrompt },
+        ...messages,
+      ],
+      stream: true,
     });
 
     if (!response.ok) {

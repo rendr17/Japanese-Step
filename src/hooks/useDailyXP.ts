@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { addDailyXP, checkAndAwardAchievements } from "@/lib/gamification";
 
 export function useTodayXP() {
   return useQuery({
@@ -47,26 +48,14 @@ export function useAddXP() {
   return useMutation({
     mutationFn: async ({ xp, activityType }: { xp: number; activityType: string }) => {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-      const today = new Date().toISOString().split("T")[0];
-      // Upsert - add XP to today's total
-      const { data: existing } = await supabase
-        .from("daily_xp_logs" as any)
-        .select("xp_earned")
-        .eq("user_id", user.id)
-        .eq("date", today)
-        .maybeSingle();
-      
-      const newTotal = ((existing as any)?.xp_earned ?? 0) + xp;
-      await supabase
-        .from("daily_xp_logs" as any)
-        .upsert(
-          { user_id: user.id, date: today, xp_earned: newTotal, activity_type: activityType },
-          { onConflict: "user_id,date" }
-        );
+      if (!user || xp <= 0) return;
+      await addDailyXP(user.id, xp, activityType);
+      await checkAndAwardAchievements(user.id);
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["today-xp"] });
+      qc.invalidateQueries({ queryKey: ["profile"] });
+      qc.invalidateQueries({ queryKey: ["achievements"] });
     },
   });
 }

@@ -53,7 +53,7 @@ const MaterialCard = ({ material, index }: { material: MaterialRow; index: numbe
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.95 }}
       transition={{ duration: 0.3, delay: index * 0.04 }}
-      className="zen-card hover-lift group cursor-pointer break-inside-avoid mb-4"
+      className="nori-card group cursor-pointer break-inside-avoid mb-4"
       onClick={() => navigate(`/materials/${material.id}`)}
     >
       {/* Top row */}
@@ -171,7 +171,9 @@ const EmptyState = () => (
     animate={{ opacity: 1, y: 0 }}
     className="flex flex-col items-center justify-center py-20 text-center"
   >
-    <div className="text-6xl mb-4">📖</div>
+    <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+      <BookOpen size={32} className="text-primary" strokeWidth={1.75} />
+    </div>
     <h3 className="text-xl font-serif font-semibold text-foreground mb-2">Belum ada materi</h3>
     <p className="text-sm text-muted-foreground max-w-sm">
       Mulai tambahkan materi belajar pertamamu. Kamu bisa menambah grammar, reading, conversation, atau vocabulary.
@@ -237,7 +239,11 @@ const Materials = () => {
         className="mb-6"
       >
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
-          <h1 className="text-2xl font-serif font-bold text-foreground">Materi Belajar Saya</h1>
+          <div>
+            <p className="nori-jp-display text-3xl mb-2">教材</p>
+            <div className="nori-wavy-line mb-3" />
+            <h1 className="text-xl font-bold uppercase tracking-wide text-foreground">Materi Belajar Saya</h1>
+          </div>
           <div className="flex gap-2 shrink-0">
             <Button variant="outline" className="gap-2" onClick={() => navigate("/materials/import")} >
               <FileUp size={16} />

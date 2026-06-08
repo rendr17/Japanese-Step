@@ -27,6 +27,27 @@ export const JFT_SECTIONS = [
   { key: "situational", label: "Situational", icon: "場", count: 10 },
 ];
 
+const JFT_EXAM_TOTAL = 40;
+const POOL_MULTIPLIER = 3;
+
+export function useJftBankStatus() {
+  return useQuery({
+    queryKey: ["exam-bank-status", "jft"],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from("exam_questions")
+        .select("*", { count: "exact", head: true })
+        .eq("exam_type", "jft")
+        .eq("is_active", true)
+        .eq("level", "jft");
+      if (error) throw error;
+      const total = count ?? 0;
+      return { ready: total >= JFT_EXAM_TOTAL, count: total, required: JFT_EXAM_TOTAL };
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
 export const useJftQuestions = () => {
   return useQuery({
     queryKey: ["jft-questions"],
@@ -35,6 +56,8 @@ export const useJftQuestions = () => {
       const { data, error } = await supabase
         .from("exam_questions")
         .select("*")
+        .eq("exam_type", "jft")
+        .eq("is_active", true)
         .eq("level", "jft")
         .limit(200);
 
@@ -47,13 +70,20 @@ export const useJftQuestions = () => {
 
       for (const [section, count] of Object.entries(SECTION_DISTRIBUTION)) {
         const sectionQs = dbQuestions.filter((q: any) => q.section === section);
-        const shuffled = sectionQs.sort(() => Math.random() - 0.5).slice(0, count);
-        allQuestions.push(...shuffled);
+        const shuffled = [...sectionQs];
+        for (let i = shuffled.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+        }
+        const picked = shuffled.slice(0, count);
+        allQuestions.push(...picked);
 
-        // Fill with placeholders if not enough
-        const needed = count - shuffled.length;
-        for (let i = 0; i < needed; i++) {
-          allQuestions.push(generateJftQuestion(section, allQuestions.length + i));
+        const needed = count - picked.length;
+        if (needed > 0) {
+          console.warn(`[exam] JFT section ${section} kurang: ${picked.length}/${count}`);
+          for (let i = 0; i < needed; i++) {
+            allQuestions.push(generateJftQuestion(section, allQuestions.length + i));
+          }
         }
       }
 

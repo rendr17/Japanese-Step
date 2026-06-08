@@ -14,12 +14,16 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Cell } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useGenerateReviewPack } from "@/hooks/useReviewPacks";
+import { useEffect, useRef } from "react";
 
 const ExamResults = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
   const [showReview, setShowReview] = useState(false);
+  const generateReviewPack = useGenerateReviewPack();
+  const reviewPackGenerated = useRef(false);
 
   const { data: result, isLoading } = useQuery({
     queryKey: ["exam-result", id],
@@ -34,6 +38,16 @@ const ExamResults = () => {
     },
     enabled: !!id,
   });
+
+  useEffect(() => {
+    if (result && id && !reviewPackGenerated.current) {
+      const wrongCount = ((result.answers as any[]) ?? []).filter((a) => !a.correct).length;
+      if (wrongCount > 0) {
+        reviewPackGenerated.current = true;
+        generateReviewPack.mutate(id);
+      }
+    }
+  }, [result, id, generateReviewPack]);
 
   if (isLoading || !result) {
     return (
@@ -72,7 +86,7 @@ const ExamResults = () => {
       className="max-w-3xl mx-auto space-y-6"
     >
       {/* Score Header */}
-      <Card className={`zen-card text-center ${passed ? "border-secondary/30" : "border-accent/30"}`}>
+      <Card className={`nori-card text-center ${passed ? "border-secondary/30" : "border-accent/30"}`}>
         <CardContent className="pt-8 pb-6 space-y-4">
           <motion.div
             initial={{ scale: 0 }}
@@ -112,7 +126,7 @@ const ExamResults = () => {
 
       {/* Section Breakdown */}
       <div className="grid md:grid-cols-2 gap-4">
-        <Card className="zen-card">
+        <Card className="nori-card">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm">Breakdown per Bagian</CardTitle>
           </CardHeader>
@@ -129,7 +143,7 @@ const ExamResults = () => {
           </CardContent>
         </Card>
 
-        <Card className="zen-card">
+        <Card className="nori-card">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm">Akurasi per Bagian</CardTitle>
           </CardHeader>
@@ -152,7 +166,7 @@ const ExamResults = () => {
       </div>
 
       {/* Review Answers */}
-      <Card className="zen-card">
+      <Card className="nori-card">
         <CardHeader>
           <Button
             variant="ghost"

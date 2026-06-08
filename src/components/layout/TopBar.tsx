@@ -1,8 +1,8 @@
-import { useState, useCallback } from "react";
+import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Search, Target, Sun, Moon } from "lucide-react";
+import { Search, Settings, LogOut } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
 import {
   Breadcrumb,
   BreadcrumbList,
@@ -11,97 +11,71 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
-import { cn } from "@/lib/utils";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useTodayXP } from "@/hooks/useDailyXP";
+import { useProfile } from "@/hooks/useDashboardData";
+import { supabase } from "@/integrations/supabase/client";
 
 const routeLabels: Record<string, string> = {
   "/": "Dashboard",
+  "/learn": "Belajar",
   "/materials": "Materi Belajar",
   "/vocabulary": "Kosakata Saya",
   "/flashcards": "Flashcards",
+  "/practice": "Latihan",
   "/progress": "Progress",
   "/exam": "Ujian Simulasi",
   "/settings": "Settings",
 };
 
-interface XPRingProps {
-  current: number;
-  goal: number;
-  size?: number;
-}
-
-const XPRing = ({ current, goal, size = 36 }: XPRingProps) => {
-  const progress = Math.min(current / goal, 1);
-  const radius = (size - 6) / 2;
-  const circumference = 2 * Math.PI * radius;
-  const offset = circumference * (1 - progress);
-
-  return (
-    <div className="relative flex items-center justify-center" style={{ width: size, height: size }}>
-      <svg width={size} height={size} className="-rotate-90">
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          fill="none"
-          stroke="hsl(var(--muted))"
-          strokeWidth={3}
-        />
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          fill="none"
-          stroke="hsl(var(--primary))"
-          strokeWidth={3}
-          strokeDasharray={circumference}
-          strokeDashoffset={offset}
-          strokeLinecap="round"
-          className="transition-all duration-500"
-        />
-      </svg>
-      <span className="absolute text-[9px] font-bold text-foreground">{Math.round(progress * 100)}%</span>
-    </div>
-  );
-};
-
 const TopBar = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { data: todayXp = 0 } = useTodayXP();
+  const { data: profile } = useProfile();
+  const dailyGoal = profile?.daily_goal_xp ?? 50;
+  const displayName = profile?.display_name || "Learner";
   const [searchQuery, setSearchQuery] = useState("");
-  const [focusMode, setFocusMode] = useState(false);
-  const [darkMode, setDarkMode] = useState(() => document.documentElement.classList.contains("dark"));
 
   const currentLabel = routeLabels[location.pathname] || "Page";
+  const xpProgress = Math.min((todayXp / dailyGoal) * 100, 100);
 
-  const toggleTheme = () => {
-    const next = !darkMode;
-    setDarkMode(next);
-    document.documentElement.classList.toggle("dark", next);
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    navigate("/login");
   };
 
   return (
-    <header className="sticky top-0 z-30 flex items-center gap-4 px-6 h-14 bg-background/80 backdrop-blur-xl border-b border-border/50">
-      {/* Breadcrumb */}
+    <header className="sticky top-0 z-30 flex items-center gap-4 px-6 h-14 bg-background border-b border-border shrink-0">
       <Breadcrumb className="hidden sm:flex">
         <BreadcrumbList>
           <BreadcrumbItem>
-            <BreadcrumbLink href="/">Home</BreadcrumbLink>
+            <BreadcrumbLink href="/" className="normal-case tracking-normal font-medium">
+              Home
+            </BreadcrumbLink>
           </BreadcrumbItem>
           {location.pathname !== "/" && (
             <>
               <BreadcrumbSeparator />
               <BreadcrumbItem>
-                <BreadcrumbPage>{currentLabel}</BreadcrumbPage>
+                <BreadcrumbPage className="normal-case tracking-normal font-medium">
+                  {currentLabel}
+                </BreadcrumbPage>
               </BreadcrumbItem>
             </>
           )}
         </BreadcrumbList>
       </Breadcrumb>
 
-      {/* Spacer */}
       <div className="flex-1" />
 
-      {/* Search */}
       <div className="relative hidden md:block w-56">
         <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
         <Input
@@ -114,30 +88,51 @@ const TopBar = () => {
               setSearchQuery("");
             }
           }}
-          className="h-8 pl-8 text-xs bg-muted/50 border-transparent focus-visible:border-border"
+          className="h-9 pl-8 text-xs"
         />
       </div>
 
-      {/* XP Ring */}
-      <div className="flex items-center gap-2">
-        <XPRing current={45} goal={100} />
-        <span className="text-xs text-muted-foreground hidden sm:inline">45/100 XP</span>
+      <div className="flex items-center gap-3 min-w-[120px]">
+        <div className="flex-1 hidden sm:block">
+          <div className="flex justify-between text-[10px] text-muted-foreground mb-1 normal-case tracking-normal">
+            <span>XP</span>
+            <span>{todayXp}/{dailyGoal}</span>
+          </div>
+          <Progress value={xpProgress} className="h-1.5" />
+        </div>
       </div>
 
-      {/* Focus Mode */}
-      <Button
-        variant="ghost"
-        size="icon"
-        className={cn("h-8 w-8", focusMode && "bg-primary text-primary-foreground")}
-        onClick={() => setFocusMode(!focusMode)}
-      >
-        <Target size={16} />
-      </Button>
-
-      {/* Theme Toggle */}
-      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={toggleTheme}>
-        {darkMode ? <Sun size={16} /> : <Moon size={16} />}
-      </Button>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button
+            className="flex items-center gap-2 rounded-md p-1 hover:bg-muted transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            aria-label="Profile menu"
+          >
+            <div className="w-8 h-8 border-2 border-foreground/20 flex items-center justify-center shrink-0">
+              <span className="text-xs font-jp font-bold text-foreground">学</span>
+            </div>
+            <span className="hidden md:block text-sm font-medium text-foreground truncate max-w-[120px] normal-case">
+              {displayName}
+            </span>
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-48">
+          <DropdownMenuLabel className="normal-case tracking-normal font-medium">{displayName}</DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={() => navigate("/settings")} className="gap-2 cursor-pointer normal-case tracking-normal">
+            <Settings size={14} />
+            Settings
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem
+            onClick={handleLogout}
+            className="gap-2 cursor-pointer text-destructive focus:text-destructive normal-case tracking-normal"
+          >
+            <LogOut size={14} />
+            Logout
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </header>
   );
 };

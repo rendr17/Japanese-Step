@@ -137,7 +137,7 @@ const SentenceAnalyzer = () => {
       </div>
 
       {/* Input */}
-      <div className="zen-card p-5 mb-6">
+      <div className="nori-card p-5 mb-6">
         <Textarea
           placeholder="Paste kalimat bahasa Jepang di sini… 例：日本語を勉強しています"
           value={sentence}
@@ -165,7 +165,7 @@ const SentenceAnalyzer = () => {
 
       {/* Error */}
       {error && (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="zen-card p-5 border-destructive/50 bg-destructive/5 text-destructive text-sm">
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="nori-card p-5 border-destructive/50 bg-destructive/5 text-destructive text-sm">
           {error}
         </motion.div>
       )}
@@ -191,7 +191,7 @@ const SentenceAnalyzer = () => {
             </div>
 
             {/* Token breakdown */}
-            <div className="zen-card p-0 overflow-hidden">
+            <div className="nori-card p-0 overflow-hidden">
               <div className="px-5 py-3 border-b border-border flex items-center justify-between">
                 <h2 className="font-serif font-semibold text-foreground text-sm">Breakdown Kata</h2>
                 <Button variant="ghost" size="sm" className="h-7 text-xs gap-1" onClick={handleAddAllTokens}>
@@ -240,7 +240,7 @@ const SentenceAnalyzer = () => {
             </div>
 
             {/* Grammar structure */}
-            <div className="zen-card p-5">
+            <div className="nori-card p-5">
               <h2 className="font-serif font-semibold text-foreground text-sm mb-3 flex items-center gap-2">
                 <BookOpen size={16} className="text-primary" /> Struktur Grammar
               </h2>
@@ -263,7 +263,7 @@ const SentenceAnalyzer = () => {
             {/* Cultural notes */}
             {result.cultural_notes && result.cultural_notes.trim() && (
               <Collapsible open={culturalOpen} onOpenChange={setCulturalOpen}>
-                <div className="zen-card p-5">
+                <div className="nori-card p-5">
                   <CollapsibleTrigger className="flex items-center justify-between w-full">
                     <h2 className="font-serif font-semibold text-foreground text-sm flex items-center gap-2">
                       <MessageCircle size={16} className="text-accent" /> Catatan Budaya
@@ -279,7 +279,7 @@ const SentenceAnalyzer = () => {
 
             {/* Similar sentences */}
             {result.similar_sentences && result.similar_sentences.length > 0 && (
-              <div className="zen-card p-5">
+              <div className="nori-card p-5">
                 <h2 className="font-serif font-semibold text-foreground text-sm mb-3">🔄 Latihan Pola Serupa</h2>
                 <div className="space-y-3">
                   {result.similar_sentences.map((s, i) => (

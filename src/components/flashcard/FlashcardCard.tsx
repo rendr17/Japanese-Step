@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 import { Volume2, Eye, EyeOff } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { FlashcardItem } from "@/hooks/useFlashcards";
 
 interface FlashcardCardProps {
@@ -22,6 +22,10 @@ const containsKanji = (text: string) => /[\u4E00-\u9FFF]/.test(text);
 const FlashcardCard = ({ card, isFlipped, onFlip, showFurigana }: FlashcardCardProps) => {
   const [furiganaVisible, setFuriganaVisible] = useState(showFurigana === "always");
   const meaningIsJapanese = isJapaneseMeaning(card.meaning ?? "");
+
+  useEffect(() => {
+    setFuriganaVisible(showFurigana === "always");
+  }, [showFurigana]);
   const kanaIsInvalid = card.kanji ? containsKanji(card.kana) : false;
 
   const levelColors: Record<string, string> = {
@@ -60,7 +64,7 @@ const FlashcardCard = ({ card, isFlipped, onFlip, showFurigana }: FlashcardCardP
       >
         {/* Front */}
         <div
-          className="zen-card min-h-[320px] flex flex-col items-center justify-center gap-4 p-8"
+          className="nori-card min-h-[320px] flex flex-col items-center justify-center gap-4 p-8"
           style={{ backfaceVisibility: "hidden" }}
         >
           <Badge className={levelColors[card.jlpt_level ?? ""] ?? "bg-muted text-muted-foreground"}>
@@ -100,7 +104,7 @@ const FlashcardCard = ({ card, isFlipped, onFlip, showFurigana }: FlashcardCardP
 
         {/* Back */}
         <div
-          className="zen-card min-h-[320px] flex flex-col items-center justify-center gap-5 p-8 absolute inset-0"
+          className="nori-card min-h-[320px] flex flex-col items-center justify-center gap-5 p-8 absolute inset-0"
           style={{ backfaceVisibility: "hidden", transform: "rotateY(180deg)" }}
         >
           {/* Japanese word + reading */}
@@ -108,7 +112,7 @@ const FlashcardCard = ({ card, isFlipped, onFlip, showFurigana }: FlashcardCardP
             <p className="text-4xl font-jp font-bold text-foreground">
               {card.kanji || card.kana}
             </p>
-            {card.kanji && (
+            {card.kanji && showFurigana !== "never" && (
               <p className="text-lg font-jp text-muted-foreground">{card.kana}</p>
             )}
           </div>

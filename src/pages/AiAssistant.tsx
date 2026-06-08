@@ -104,7 +104,7 @@ const AiAssistant = () => {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="fixed inset-0 z-30 bg-background/60 backdrop-blur-sm"
+                className="fixed inset-0 z-30 bg-foreground/20"
                 onClick={() => setSidebarOpen(false)}
               />
             )}
@@ -325,7 +325,7 @@ const WelcomeScreen = ({ onPrompt }: { onPrompt: (msg: string) => void }) => (
         <button
           key={p.label}
           onClick={() => onPrompt(p.message)}
-          className="zen-card p-3 text-left hover:border-primary/30 transition-colors cursor-pointer"
+          className="nori-card p-3 text-left hover:border-primary/30 transition-colors cursor-pointer"
         >
           <p className="text-xs font-medium text-foreground">{p.label}</p>
           <p className="text-[10px] text-muted-foreground mt-0.5 line-clamp-1">{p.message}</p>

@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { normalizeFuriganaHtml } from "@/lib/furigana";
+import { htmlToTiptapJson } from "@/lib/tiptapHtml";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 
@@ -161,9 +163,13 @@ export function useImportMaterial() {
             category: section.category,
             level: finalLevel as any,
             tags: section.tags,
-            content: settings.saveFullContent
-              ? { type: "doc", content: [{ type: "paragraph", content: [{ type: "text", text: section.content_html }] }] }
-              : { type: "doc", content: [{ type: "paragraph", content: [{ type: "text", text: analysis.summary.join("\n") }] }] },
+            content: htmlToTiptapJson(
+              normalizeFuriganaHtml(
+                settings.saveFullContent
+                  ? section.content_html
+                  : (section.content_html || analysis.summary.join("\n"))
+              )
+            ),
             vocabulary: analysis.vocabulary.filter((v) => v.selected).map((v) => ({ kanji: v.kanji || "", kana: v.kana, meaning: v.meaning })),
             grammar_notes: analysis.grammar_notes,
             cultural_note: analysis.cultural_note || null,
@@ -191,8 +197,20 @@ export function useImportMaterial() {
           jlpt_level: (["n5","n4","n3","n2","n1","none"].includes(v.level || "") ? v.level : null) as any,
           tags: analysis.suggested_tags?.slice(0, 3) || [],
         }));
-        const { error: vocErr } = await supabase.from("vocab_bank").insert(vocabRows);
+        const { data: insertedVocab, error: vocErr } = await supabase
+          .from("vocab_bank")
+          .insert(vocabRows)
+          .select("id");
         if (vocErr) console.error("Vocab save error:", vocErr);
+        else if (insertedVocab && insertedVocab.length > 0) {
+          const srsRows = insertedVocab.map((v) => ({
+            user_id: user.id,
+            vocab_id: v.id,
+            next_review_date: new Date().toISOString(),
+          }));
+          const { error: srsErr } = await supabase.from("srs_logs").insert(srsRows);
+          if (srsErr) console.error("SRS insert error:", srsErr);
+        }
         setSavedVocabCount(selectedVocab.length);
       }
 

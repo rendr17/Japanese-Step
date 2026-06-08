@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { chatCompletions } from "../_shared/ai.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -17,9 +18,6 @@ serve(async (req) => {
       });
     }
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
-
     const charTarget = length === "short" ? 3000 : length === "long" ? 8000 : 5000;
 
     const lengthInstruction = `CRITICAL LENGTH REQUIREMENT: The content_html MUST contain approximately ${charTarget} Japanese characters (not counting HTML tags). This is a HARD requirement. If the target is ${charTarget} characters, write at least ${Math.round(charTarget * 0.8)} characters. Count only the visible Japanese text, not HTML markup. Write MORE paragraphs and MORE detail to reach this length. Do NOT stop early.`;
@@ -31,7 +29,7 @@ ${lengthInstruction}
 
 Requirements:
 - Use vocabulary appropriate for ${level.toUpperCase()}
-- Include furigana for ALL kanji using format: 漢字（かんじ）
+- WAJIB sertakan furigana untuk SEMUA kanji menggunakan format HTML: <ruby>漢字<rt>かんじ</rt></ruby>. JANGAN gunakan format kurung 漢字（かんじ）
 - At least ${charTarget > 5000 ? "16-20" : charTarget > 3000 ? "10-14" : "6-8"} dialogue turns between 2-3 characters
 - Each line should have the speaker name
 - Include multiple scenes or topic shifts within the conversation
@@ -45,7 +43,7 @@ ${lengthInstruction}
 
 Requirements:
 - Use vocabulary and grammar appropriate for ${level.toUpperCase()}
-- Include furigana for ALL kanji using format: 漢字（かんじ）
+- WAJIB sertakan furigana untuk SEMUA kanji menggunakan format HTML: <ruby>漢字<rt>かんじ</rt></ruby>. JANGAN gunakan format kurung 漢字（かんじ）
 - Write in paragraph form with at least ${charTarget > 5000 ? "10-12" : charTarget > 3000 ? "7-9" : "4-6"} substantial paragraphs
 - Each paragraph should be at least 200 characters
 - Include a mix of simple and moderately complex sentences
@@ -60,7 +58,7 @@ ${lengthInstruction}
 
 Requirements:
 - Explain the grammar point clearly in Indonesian
-- Include furigana for ALL kanji using format: 漢字（かんじ）
+- WAJIB sertakan furigana untuk SEMUA kanji menggunakan format HTML: <ruby>漢字<rt>かんじ</rt></ruby>. JANGAN gunakan format kurung 漢字（かんじ）
 - Provide ${charTarget > 5000 ? "10-15" : charTarget > 3000 ? "8-10" : "4-6"} example sentences with translations
 - Show common mistakes to avoid
 - Include multiple usage patterns and variations
@@ -68,16 +66,9 @@ Requirements:
 
 Return using the provided tool.`,
     };
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
-        max_tokens: 16384,
-        messages: [
+    const response = await chatCompletions({
+      max_tokens: 16384,
+      messages: [
           {
             role: "system",
             content: "You are a Japanese language education content creator. Create high-quality learning materials. All explanations should be in Indonesian. Always include furigana for kanji. Always respond using the provided tool. IMPORTANT: You MUST also provide an Indonesian translation of the full content.",
@@ -133,9 +124,8 @@ Return using the provided tool.`,
               },
             },
           },
-        ],
-        tool_choice: { type: "function", function: { name: "learning_material" } },
-      }),
+      ],
+      tool_choice: { type: "function", function: { name: "learning_material" } },
     });
 
     if (!response.ok) {

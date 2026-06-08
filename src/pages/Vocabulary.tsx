@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Plus, Search, Trash2, Pencil, Layers, Volume2, Download, Upload, Tag, X,
+  Plus, Search, Trash2, Pencil, Layers, Volume2, Download, Upload, Tag, X, BookMarked,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -333,7 +333,7 @@ const MobileCards = ({
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: i * 0.03 }}
-        className="zen-card p-4"
+        className="nori-card p-4"
       >
         <div className="flex items-start justify-between mb-2">
           <div>
@@ -376,7 +376,7 @@ const MobileCards = ({
 const SkeletonTable = ({ isMobile }: { isMobile: boolean }) => (
   <div className="space-y-3">
     {Array.from({ length: 6 }).map((_, i) => (
-      <div key={i} className={isMobile ? "zen-card p-4 space-y-2" : "flex items-center gap-4 px-4 py-3 border-b border-border"}>
+      <div key={i} className={isMobile ? "nori-card p-4 space-y-2" : "flex items-center gap-4 px-4 py-3 border-b border-border"}>
         <Skeleton className="h-5 w-16" />
         <Skeleton className="h-5 w-24" />
         <Skeleton className="h-4 w-32" />
@@ -389,7 +389,9 @@ const SkeletonTable = ({ isMobile }: { isMobile: boolean }) => (
 // ── Empty State ────────────────────────────────────────────────────
 const EmptyState = ({ onAdd }: { onAdd: () => void }) => (
   <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col items-center justify-center py-20 text-center">
-    <div className="text-6xl mb-4">📚</div>
+    <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+      <BookMarked size={32} className="text-primary" strokeWidth={1.75} />
+    </div>
     <h3 className="text-xl font-serif font-semibold text-foreground mb-2">Belum ada kosakata</h3>
     <p className="text-sm text-muted-foreground max-w-sm mb-4">
       Mulai tambah kosakata dari materi atau manual untuk membangun bank kosakata pribadimu.

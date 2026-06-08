@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { ChevronDown, ChevronUp, Languages } from "lucide-react";
+import { ChevronDown, ChevronUp, Languages, BookMarked, FileText, Landmark } from "lucide-react";
+import SectionHeading from "@/components/ui/section-heading";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -61,10 +62,8 @@ const MaterialSupplementary = ({ vocabulary, grammarNotes, culturalNote, indones
                 exit={{ opacity: 0, height: 0 }}
                 className="overflow-hidden"
               >
-                <div className="zen-card p-5 mt-3">
-                  <h3 className="text-sm font-medium text-foreground mb-3 flex items-center gap-2">
-                    🇮🇩 Terjemahan Bahasa Indonesia
-                  </h3>
+                <div className="nori-card p-5 mt-3">
+                  <SectionHeading icon={Languages} label="Terjemahan Bahasa Indonesia" className="mb-3" />
                   <div className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line">
                     {indonesianTranslation}
                   </div>
@@ -77,9 +76,9 @@ const MaterialSupplementary = ({ vocabulary, grammarNotes, culturalNote, indones
 
       {/* Vocabulary */}
       {hasVocab && (
-        <div className="zen-card p-0 overflow-hidden">
+        <div className="nori-card p-0 overflow-hidden">
           <div className="px-5 py-3 border-b border-border">
-            <h3 className="text-sm font-medium text-foreground">📚 Kosakata ({vocabulary.length})</h3>
+            <SectionHeading icon={BookMarked} label="Kosakata" count={vocabulary.length} />
           </div>
           <Table>
             <TableHeader>
@@ -105,10 +104,10 @@ const MaterialSupplementary = ({ vocabulary, grammarNotes, culturalNote, indones
       {/* Grammar Notes */}
       {hasGrammar && (
         <Collapsible open={grammarOpen} onOpenChange={setGrammarOpen}>
-          <div className="zen-card p-0 overflow-hidden">
+          <div className="nori-card p-0 overflow-hidden">
             <CollapsibleTrigger asChild>
               <button className="w-full px-5 py-3 border-b border-border flex items-center justify-between hover:bg-muted/30 transition-colors">
-                <h3 className="text-sm font-medium text-foreground">📝 Catatan Grammar ({grammarNotes.length})</h3>
+                <SectionHeading icon={FileText} label="Catatan Grammar" count={grammarNotes.length} />
                 {grammarOpen ? <ChevronUp size={16} className="text-muted-foreground" /> : <ChevronDown size={16} className="text-muted-foreground" />}
               </button>
             </CollapsibleTrigger>
@@ -128,8 +127,8 @@ const MaterialSupplementary = ({ vocabulary, grammarNotes, culturalNote, indones
 
       {/* Cultural Note */}
       {hasCultural && (
-        <div className="zen-card p-5">
-          <h3 className="text-sm font-medium text-foreground mb-2">🎌 Catatan Budaya</h3>
+        <div className="nori-card p-5">
+          <SectionHeading icon={Landmark} label="Catatan Budaya" className="mb-2" />
           <p className="text-sm text-muted-foreground leading-relaxed">{culturalNote}</p>
         </div>
       )}

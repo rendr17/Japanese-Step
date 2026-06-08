@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import { Grid3x3, Flame, CheckCircle2, Clock, Target } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -376,8 +377,10 @@ const KanaQuiz = () => {
   if (!started) {
     return (
       <div className="space-y-6">
-        <div className="zen-card p-6 max-w-sm mx-auto text-center space-y-4">
-          <div className="text-4xl">🎌</div>
+        <div className="nori-card p-6 max-w-sm mx-auto text-center space-y-4">
+          <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
+            <Grid3x3 size={28} className="text-primary" strokeWidth={1.75} />
+          </div>
           <h3 className="text-lg font-serif font-semibold text-foreground">Kuis Kana</h3>
           <p className="text-sm text-muted-foreground">Ketik romaji untuk karakter kana yang tampil. Kamu punya 60 detik!</p>
           
@@ -396,7 +399,12 @@ const KanaQuiz = () => {
           {total > 0 && (
             <div className="text-sm text-muted-foreground bg-muted/50 rounded-lg p-3">
               <p>Hasil terakhir: <span className="font-bold text-foreground">{score}/{total}</span> benar ({accuracy}%)</p>
-              {streak > 0 && <p className="text-xs mt-1">🔥 Streak terbaik: {streak}</p>}
+              {streak > 0 && (
+                <p className="text-xs mt-1 flex items-center justify-center gap-1">
+                  <Flame size={12} className="text-destructive" strokeWidth={1.75} />
+                  Streak terbaik: {streak}
+                </p>
+              )}
             </div>
           )}
 
@@ -410,14 +418,19 @@ const KanaQuiz = () => {
     <div className="max-w-sm mx-auto space-y-5">
       {/* Timer & score bar */}
       <div className="flex items-center justify-between">
-        <div className="text-sm font-medium text-foreground">
-          ✅ {score} / {total} benar
+        <div className="text-sm font-medium text-foreground flex items-center gap-1.5">
+          <CheckCircle2 size={14} className="text-primary" strokeWidth={1.75} />
+          {score} / {total} benar
         </div>
-        <div className={`text-sm font-bold ${timeLeft <= 10 ? "text-destructive animate-pulse" : "text-muted-foreground"}`}>
-          ⏱ {timeLeft}s
+        <div className={`text-sm font-bold flex items-center gap-1.5 ${timeLeft <= 10 ? "text-destructive animate-pulse" : "text-muted-foreground"}`}>
+          <Clock size={14} strokeWidth={1.75} />
+          {timeLeft}s
         </div>
         {streak >= 3 && (
-          <div className="text-sm text-accent font-bold">🔥 {streak}x streak!</div>
+          <div className="text-sm text-accent font-bold flex items-center gap-1">
+            <Flame size={14} strokeWidth={1.75} />
+            {streak}x streak!
+          </div>
         )}
       </div>
 
@@ -437,7 +450,7 @@ const KanaQuiz = () => {
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: -20, scale: 0.95 }}
           transition={{ duration: 0.2 }}
-          className={`zen-card p-8 flex flex-col items-center gap-4 transition-colors ${
+          className={`nori-card p-8 flex flex-col items-center gap-4 transition-colors ${
             feedback === "correct" ? "border-secondary bg-secondary/10" :
             feedback === "wrong" ? "border-destructive bg-destructive/10" : ""
           }`}
@@ -501,8 +514,9 @@ const KanaTable = () => (
         <TabsTrigger value="numbers">
           １２３ <Badge variant="outline" className="ml-1.5 text-[10px]">Angka</Badge>
         </TabsTrigger>
-        <TabsTrigger value="quiz">
-          🎯 <Badge variant="outline" className="ml-1.5 text-[10px]">Kuis</Badge>
+        <TabsTrigger value="quiz" className="gap-1">
+          <Target size={14} className="text-primary" strokeWidth={1.75} />
+          <Badge variant="outline" className="ml-0.5 text-[10px]">Kuis</Badge>
         </TabsTrigger>
       </TabsList>
 

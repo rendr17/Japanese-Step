@@ -17,6 +17,29 @@ const SECTION_DISTRIBUTION = {
   reading: 20,
 };
 
+const JLPT_EXAM_TOTAL = 60;
+const POOL_MULTIPLIER = 3;
+
+export function useExamBankStatus(level?: string) {
+  return useQuery({
+    queryKey: ["exam-bank-status", "jlpt", level],
+    queryFn: async () => {
+      if (!level) return { ready: false, count: 0, required: JLPT_EXAM_TOTAL };
+      const { count, error } = await supabase
+        .from("exam_questions")
+        .select("*", { count: "exact", head: true })
+        .eq("exam_type", "jlpt")
+        .eq("is_active", true)
+        .eq("level", level.toLowerCase());
+      if (error) throw error;
+      const total = count ?? 0;
+      return { ready: total >= JLPT_EXAM_TOTAL, count: total, required: JLPT_EXAM_TOTAL };
+    },
+    enabled: !!level,
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
 export const useExamQuestions = (level: string) => {
   return useQuery({
     queryKey: ["exam-questions", level],
@@ -27,9 +50,11 @@ export const useExamQuestions = (level: string) => {
         const { data, error } = await supabase
           .from("exam_questions")
           .select("*")
+          .eq("exam_type", "jlpt")
+          .eq("is_active", true)
           .eq("level", level.toLowerCase())
           .eq("section", section)
-          .limit(count);
+          .limit(count * POOL_MULTIPLIER);
 
         if (error) throw error;
 
@@ -38,15 +63,19 @@ export const useExamQuestions = (level: string) => {
           options: q.options as string[],
         }));
 
-        // Shuffle and take needed count
-        const shuffled = questions.sort(() => Math.random() - 0.5);
+        // Fisher-Yates shuffle and take needed count
+        const shuffled = [...questions];
+        for (let i = shuffled.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+        }
         allQuestions.push(...shuffled.slice(0, count));
       }
 
-      // If not enough questions in DB, generate placeholder questions
-      if (allQuestions.length < 60) {
-        const needed = 60 - allQuestions.length;
+      if (allQuestions.length < JLPT_EXAM_TOTAL) {
+        const needed = JLPT_EXAM_TOTAL - allQuestions.length;
         const sections = ["vocabulary", "grammar", "reading"];
+        console.warn(`[exam] Bank ${level} kurang: ${allQuestions.length}/${JLPT_EXAM_TOTAL}, menggunakan placeholder`);
         for (let i = 0; i < needed; i++) {
           const section = sections[i % 3];
           allQuestions.push(generatePlaceholderQuestion(level, section, allQuestions.length + i));

@@ -1,25 +1,17 @@
-import { motion } from "framer-motion";
-import { BookOpen, MessageCircle, ArrowRight } from "lucide-react";
+import { BookOpen, MessageCircle } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
 import { useProfile, useLearningProgress } from "@/hooks/useDashboardData";
 
 const pathConfig = {
   jlpt_academic: {
-    icon: <BookOpen size={20} />,
-    emoji: "📚",
+    icon: BookOpen,
     label: "JLPT Academic",
-    colorClass: "text-jlpt",
-    bgClass: "bg-jlpt-muted",
     badgeClass: "jlpt-badge",
-    progressColor: "bg-jlpt",
   },
   jft_practical: {
-    icon: <MessageCircle size={20} />,
-    emoji: "💬",
+    icon: MessageCircle,
     label: "JFT Practical",
-    colorClass: "text-jft",
-    bgClass: "bg-jft-muted",
     badgeClass: "jft-badge",
-    progressColor: "bg-jft",
   },
 };
 
@@ -28,44 +20,32 @@ const LearningPathIndicator = () => {
   const { data: progress } = useLearningProgress();
   const path = profile?.current_path ?? "jlpt_academic";
   const cfg = pathConfig[path];
+  const Icon = cfg.icon;
   const progressPct = progress?.progressPct ?? 0;
   const levelLabel = (progress?.level ?? "n5").toUpperCase();
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3, ease: "easeOut", delay: 0.25 }}
-      className="zen-card"
-    >
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-3">
-          <div className={`p-2.5 rounded-lg ${cfg.bgClass} ${cfg.colorClass}`}>
-            {cfg.icon}
-          </div>
-          <div>
-            <span className={cfg.badgeClass}>{cfg.label}</span>
-            <p className="text-xs text-muted-foreground mt-1">Level aktif: {levelLabel}</p>
-          </div>
+    <div className="nori-card">
+      <div className="flex items-center gap-3 mb-4">
+        <div className="p-2 border border-border rounded-md text-foreground">
+          <Icon size={18} strokeWidth={1.75} />
         </div>
-        <span className="text-2xl">{cfg.emoji}</span>
+        <div>
+          <span className={cfg.badgeClass}>{cfg.label}</span>
+          <p className="text-xs text-muted-foreground mt-1 normal-case tracking-normal font-normal">
+            Level aktif: {levelLabel}
+          </p>
+        </div>
       </div>
 
       <div className="space-y-2">
-        <div className="flex justify-between text-xs text-muted-foreground">
+        <div className="flex justify-between text-xs text-muted-foreground normal-case tracking-normal">
           <span>{progress?.mastered ?? 0} / {progress?.target ?? 800} kata dikuasai</span>
           <span>{progressPct}%</span>
         </div>
-        <div className="h-2.5 rounded-full bg-muted overflow-hidden">
-          <motion.div
-            initial={{ width: 0 }}
-            animate={{ width: `${progressPct}%` }}
-            transition={{ duration: 1, ease: "easeOut", delay: 0.4 }}
-            className={`h-full rounded-full ${cfg.progressColor}`}
-          />
-        </div>
+        <Progress value={progressPct} />
       </div>
-    </motion.div>
+    </div>
   );
 };
 
