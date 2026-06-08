@@ -20,7 +20,8 @@ dist-ssr
 
 # Local docs and tooling (not for repo)
 docs/
-scripts/
+scripts/*
+!scripts/copy-kuromoji-dict.mjs
 
 # Editor directories and files
 .vscode/*
